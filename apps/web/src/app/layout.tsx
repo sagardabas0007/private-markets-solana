@@ -5,8 +5,13 @@ import { Providers } from './providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Dark Alpha - Private Prediction Markets',
+  title: 'Dark Alpha',
   description: 'Private prediction markets where whales can\'t front-run your trades',
+  icons: {
+    icon: '/frog-logo.svg',
+    shortcut: '/frog-logo.svg',
+    apple: '/frog-logo.svg',
+  },
 }
 
 export default function RootLayout({
