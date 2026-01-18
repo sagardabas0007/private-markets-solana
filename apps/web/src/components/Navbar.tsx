@@ -9,8 +9,12 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-dark border-2 border-dark flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
-              <span className="text-neon-green font-bold text-lg">Ω</span>
+            <div className="w-12 h-12 rounded-xl bg-dark border-2 border-dark flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
+              <img 
+                src="/frog-logo.svg" 
+                alt="Logo" 
+                className="w-[70%] h-[70%] object-contain"
+              />
             </div>
           </div>
 
