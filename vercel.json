@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm --filter shadow-alpha-web build",
+  "installCommand": "pnpm install --no-frozen-lockfile --shamefully-hoist",
+  "outputDirectory": "apps/web/.next",
+  "env": {
+    "NEXT_PUBLIC_SOLANA_NETWORK": "devnet",
+    "SKIP_ENV_VALIDATION": "true"
+  },
+  "build": {
+    "env": {
+      "NEXT_TELEMETRY_DISABLED": "1",
+      "NODE_OPTIONS": "--max-old-space-size=4096"
+    }
+  }
+}
