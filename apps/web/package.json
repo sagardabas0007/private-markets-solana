@@ -2,12 +2,17 @@
   "name": "shadow-alpha-web",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": "20.x",
+    "pnpm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "postinstall": "echo 'Build environment ready'"
   },
   "dependencies": {
     "next": "^14.0.4",
