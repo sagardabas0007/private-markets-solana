@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { usePhantom, useAccounts, useConnect } from '@phantom/react-sdk';
 import Link from 'next/link';
 import {
   Wallet,
@@ -18,9 +18,15 @@ import { Button } from '@/components/ui/button';
 import { fetchMarkets, Market, isMarketActive } from '@/lib/api';
 
 export default function DashboardPage() {
-  const { connected, publicKey } = useWallet();
+  const { isConnected, isLoading } = usePhantom();
+  const { connect, isConnecting } = useConnect();
+  const accounts = useAccounts();
   const [markets, setMarkets] = useState<Market[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Get the Solana address from connected accounts
+  const solanaAccount = accounts?.find((a) => a.addressType === 'solana');
+  const publicKeyString = solanaAccount?.address || '';
 
   useEffect(() => {
     fetchMarkets()
@@ -30,7 +36,24 @@ export default function DashboardPage() {
 
   const activeMarkets = markets.filter(isMarketActive).slice(0, 5);
 
-  if (!connected) {
+  // Show loading while SDK initializes
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-off-white">
+        <Navbar />
+        <main className="pt-24 pb-16 px-6">
+          <div className="max-w-4xl mx-auto text-center py-20">
+            <div className="w-24 h-24 bg-dark/10 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+              <Wallet className="w-12 h-12 text-dark/40" />
+            </div>
+            <h1 className="font-black text-4xl mb-4">Loading...</h1>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!isConnected) {
     return (
       <div className="min-h-screen bg-off-white">
         <Navbar />
@@ -44,8 +67,13 @@ export default function DashboardPage() {
               Connect your Solana wallet to view your portfolio, positions, and trade with
               encrypted privacy.
             </p>
-            <Button variant="hero" size="xl">
-              Connect Wallet
+            <Button
+              variant="hero"
+              size="xl"
+              onClick={() => connect({ provider: 'injected' })}
+              disabled={isConnecting}
+            >
+              {isConnecting ? 'Connecting...' : 'Connect Phantom'}
               <ArrowRight className="w-5 h-5" />
             </Button>
           </div>
@@ -66,7 +94,7 @@ export default function DashboardPage() {
               <h1 className="font-black text-4xl mb-2">Dashboard</h1>
               <p className="text-dark/60 flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-neon-green animate-pulse" />
-                Connected: {publicKey?.toBase58().slice(0, 8)}...
+                Connected: {publicKeyString ? `${publicKeyString.slice(0, 8)}...` : 'Wallet'}
               </p>
             </div>
 

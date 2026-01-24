@@ -1,46 +1,30 @@
 "use client";
 
-import React, { FC, ReactNode, useMemo } from "react";
-import {
-  ConnectionProvider,
-  WalletProvider,
-} from "@solana/wallet-adapter-react";
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import { clusterApiUrl } from "@solana/web3.js";
+import { ReactNode } from "react";
+import { PhantomProvider, lightTheme } from "@phantom/react-sdk";
 
-// Import wallet adapter styles
-import "@solana/wallet-adapter-react-ui/styles.css";
-
-interface SolanaProviderProps {
+interface WalletProviderProps {
   children: ReactNode;
 }
 
 /**
- * Solana Wallet Provider - Following official Solana docs pattern exactly
- * Reference: https://solana.com/docs/clients/javascript-reference
+ * Phantom Wallet Provider - Using official Phantom React SDK
  *
- * Key points:
- * - Pass empty array for wallets[] - relies on Wallet Standard auto-detection
- * - This automatically discovers Phantom, Solflare, and other standard wallets
- * - No need to manually create adapter instances
+ * This is a complete replacement for @solana/wallet-adapter-*
+ * It's simpler, more reliable, and designed specifically for Phantom.
  */
-export const WalletContextProvider: FC<SolanaProviderProps> = ({ children }) => {
-  // DEVNET ONLY - Safe for hackathon, no real money
-  const network = WalletAdapterNetwork.Devnet;
-
-  // Use devnet RPC endpoint
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-
-  // Empty array - Wallet Standard will auto-detect installed wallets
-  // This is the recommended approach per Solana docs
-  const wallets = useMemo(() => [], []);
-
+export function WalletContextProvider({ children }: WalletProviderProps) {
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+    <PhantomProvider
+      config={{
+        // Only use injected provider (browser extension)
+        // No OAuth needed for hackathon demo
+        providers: ["injected"],
+      }}
+      theme={lightTheme}
+      appName="Dark Alpha"
+    >
+      {children}
+    </PhantomProvider>
   );
-};
+}

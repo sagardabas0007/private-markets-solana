@@ -3,17 +3,12 @@
 import { ReactNode } from "react";
 import dynamic from "next/dynamic";
 
-// Dynamic import the wallet provider with ssr: false
-// This ensures wallet context is only created on client side
+// Dynamic import with ssr: false - PhantomProvider must only run on client
 const WalletContextProvider = dynamic(
   () => import("./wallet-provider").then((mod) => mod.WalletContextProvider),
   { ssr: false }
 );
 
-interface ProvidersProps {
-  children: ReactNode;
-}
-
-export function Providers({ children }: ProvidersProps) {
+export function Providers({ children }: { children: ReactNode }) {
   return <WalletContextProvider>{children}</WalletContextProvider>;
 }

@@ -3,11 +3,10 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 
-// CRITICAL: Use dynamic import with ssr: false for WalletMultiButton
-// This prevents the "WalletContext without providing one" error
-// The button tries to access context during SSR before Provider is ready
-const WalletMultiButtonDynamic = dynamic(
-  async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
+// Dynamic import of PhantomWalletButton with SSR disabled
+// This ensures the Phantom SDK hooks only run on the client
+const PhantomWalletButton = dynamic(
+  () => import('./PhantomWalletButton').then((mod) => mod.PhantomWalletButton),
   { ssr: false }
 );
 
@@ -36,9 +35,9 @@ const Navbar = () => {
             <NavLink href="/agent">AI Agent</NavLink>
           </div>
 
-          {/* Connect Wallet - Dynamic import prevents SSR context issues */}
+          {/* Phantom Wallet Button */}
           <div>
-            <WalletMultiButtonDynamic />
+            <PhantomWalletButton />
           </div>
         </div>
       </div>

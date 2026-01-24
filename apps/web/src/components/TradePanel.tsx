@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { usePhantom, useAccounts } from '@phantom/react-sdk';
 import { Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { encryptTrade, executeTrade, MarketPrices } from '@/lib/api';
@@ -17,7 +17,9 @@ export default function TradePanel({
   prices,
   onTradeComplete,
 }: TradePanelProps) {
-  const { connected, publicKey } = useWallet();
+  const { isConnected } = usePhantom();
+  const accounts = useAccounts();
+
   const [side, setSide] = useState<'yes' | 'no'>('yes');
   const [amount, setAmount] = useState('');
   const [showEncrypted, setShowEncrypted] = useState(false);
@@ -25,6 +27,10 @@ export default function TradePanel({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [encryptedData, setEncryptedData] = useState<string | null>(null);
+
+  // Get the Solana address from connected accounts
+  const solanaAccount = accounts?.find((a) => a.addressType === 'solana');
+  const publicKeyString = solanaAccount?.address || '';
 
   const handleEncrypt = async () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -88,7 +94,7 @@ export default function TradePanel({
     ? (parseFloat(amount) / (side === 'yes' ? prices.yes : prices.no)).toFixed(2)
     : '0';
 
-  if (!connected) {
+  if (!isConnected) {
     return (
       <div className="bg-white border-2 border-dark rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
         <div className="text-center py-8">
