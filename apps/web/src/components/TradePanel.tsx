@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { usePhantom, useAccounts } from '@phantom/react-sdk';
-import { Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { Lock, Eye, EyeOff, AlertCircle, CheckCircle, Shield, Send, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { encryptTrade, executeTrade, MarketPrices, EncryptedTrade } from '@/lib/api';
+import { encryptTrade, submitEncryptedPosition, MarketPrices, EncryptedTrade } from '@/lib/api';
 
 interface TradePanelProps {
   marketAddress: string;
@@ -24,13 +25,15 @@ export default function TradePanel({
   const [amount, setAmount] = useState('');
   const [showEncrypted, setShowEncrypted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [encryptedData, setEncryptedData] = useState<EncryptedTrade | null>(null);
+  const [positionId, setPositionId] = useState<string | null>(null);
 
   // Get the Solana address from connected accounts
   const solanaAccount = accounts?.find((a) => a.addressType === 'solana');
-  const publicKeyString = solanaAccount?.address || '';
+  const walletAddress = solanaAccount?.address || '';
 
   const handleEncrypt = async () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -40,6 +43,8 @@ export default function TradePanel({
 
     setLoading(true);
     setError(null);
+    setSuccess(false);
+    setPositionId(null);
 
     try {
       // Convert to lamports/smallest unit (6 decimals for USDC)
@@ -60,33 +65,39 @@ export default function TradePanel({
     }
   };
 
-  const handleTrade = async () => {
-    if (!amount || parseFloat(amount) <= 0) {
-      setError('Please enter a valid amount');
+  const handleSubmitPosition = async () => {
+    if (!encryptedData) {
+      setError('Please encrypt your position first');
       return;
     }
 
-    setLoading(true);
+    if (!walletAddress) {
+      setError('Wallet not connected');
+      return;
+    }
+
+    setSubmitting(true);
     setError(null);
     setSuccess(false);
 
     try {
-      const amountInSmallestUnit = (parseFloat(amount) * 1_000_000).toString();
-
-      await executeTrade({
-        market: marketAddress,
+      const result = await submitEncryptedPosition({
+        walletAddress,
+        marketAddress,
+        encryptedTrade: encryptedData,
         side,
-        amount: amountInSmallestUnit,
       });
 
+      setPositionId(result.positionId);
       setSuccess(true);
       setAmount('');
       setEncryptedData(null);
+      setShowEncrypted(false);
       onTradeComplete?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Trade failed');
+      setError(err instanceof Error ? err.message : 'Failed to submit position');
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -111,9 +122,9 @@ export default function TradePanel({
   return (
     <div className="bg-white border-2 border-dark rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-bold text-xl">Place Trade</h3>
+        <h3 className="font-bold text-xl">Private Trade</h3>
         <div className="flex items-center gap-2 text-sm text-neon-green font-medium">
-          <Lock className="w-4 h-4" />
+          <Shield className="w-4 h-4" />
           <span>Encrypted</span>
         </div>
       </div>
@@ -207,9 +218,9 @@ export default function TradePanel({
             </code>
           </div>
           <div>
-            <p className="text-xs text-dark/50 mb-1">Commitment Hash:</p>
+            <p className="text-xs text-dark/50 mb-1">Commitment Hash (verifiable):</p>
             <code className="text-xs break-all text-neon-green block bg-white/50 p-2 rounded">
-              {encryptedData.commitmentHash.slice(0, 32)}...
+              {encryptedData.commitmentHash}
             </code>
           </div>
         </div>
@@ -238,15 +249,29 @@ export default function TradePanel({
       {/* Error/Success Messages */}
       {error && (
         <div className="flex items-center gap-2 p-3 mb-4 bg-red-100 border border-red-300 rounded-xl">
-          <AlertCircle className="w-5 h-5 text-red-500" />
+          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
           <span className="text-sm text-red-700">{error}</span>
         </div>
       )}
 
-      {success && (
-        <div className="flex items-center gap-2 p-3 mb-4 bg-green-100 border border-green-300 rounded-xl">
-          <CheckCircle className="w-5 h-5 text-green-500" />
-          <span className="text-sm text-green-700">Trade submitted successfully!</span>
+      {success && positionId && (
+        <div className="p-4 mb-4 bg-green-100 border border-green-300 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <CheckCircle className="w-5 h-5 text-green-500" />
+            <span className="font-bold text-green-700">Position Submitted!</span>
+          </div>
+          <p className="text-xs text-green-600 mb-2">
+            Your encrypted position has been stored. Only you can decrypt it.
+          </p>
+          <code className="text-xs text-green-800 bg-green-200 px-2 py-1 rounded block mb-3">
+            Position ID: {positionId.slice(0, 16)}...
+          </code>
+          <Link href="/portfolio">
+            <Button variant="heroSecondary" size="sm" className="w-full">
+              <Briefcase className="w-4 h-4 mr-2" />
+              View in Portfolio
+            </Button>
+          </Link>
         </div>
       )}
 
@@ -257,7 +282,7 @@ export default function TradePanel({
           size="xl"
           className="w-full"
           onClick={handleEncrypt}
-          disabled={loading || !amount}
+          disabled={loading || submitting || !amount}
         >
           <Lock className="w-5 h-5 mr-2" />
           {loading ? 'Encrypting...' : 'Encrypt & Preview'}
@@ -267,19 +292,23 @@ export default function TradePanel({
           variant="heroSecondary"
           size="xl"
           className="w-full"
-          onClick={handleTrade}
-          disabled={loading || !amount}
+          onClick={handleSubmitPosition}
+          disabled={loading || submitting || !encryptedData}
         >
-          {loading ? 'Processing...' : `Trade ${side.toUpperCase()}`}
+          <Send className="w-5 h-5 mr-2" />
+          {submitting ? 'Submitting...' : 'Submit Private Position'}
         </Button>
       </div>
 
       {/* Privacy Notice */}
-      <p className="text-xs text-dark/40 mt-4 text-center">
-        Your position size is encrypted using Inco Network.
-        <br />
-        Only you can decrypt your positions.
-      </p>
+      <div className="mt-4 p-3 bg-neon-green/10 rounded-xl border border-neon-green/30">
+        <p className="text-xs text-dark/70 text-center">
+          <Shield className="w-3 h-3 inline mr-1" />
+          <strong>Privacy Protected:</strong> Your position size is encrypted with Inco ECIES.
+          <br />
+          Only the commitment hash is visible. Settlement reveals winners only.
+        </p>
+      </div>
     </div>
   );
 }

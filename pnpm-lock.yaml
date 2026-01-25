@@ -51,8 +51,8 @@ importers:
         specifier: ^3.0.3
         version: 3.0.3
       pnp-sdk:
-        specifier: latest
-        version: 0.2.3(@coral-xyz/anchor@0.32.1)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)
+        specifier: ^0.2.6
+        version: 0.2.6(@coral-xyz/anchor@0.32.1)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)
       rss-parser:
         specifier: ^3.13.0
         version: 3.13.0
@@ -93,6 +93,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@phantom/react-sdk':
+        specifier: ^1.0.2
+        version: 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(react-native@0.83.1)(react@18.3.1)(typescript@5.3.3)
       '@solana/wallet-adapter-base':
         specifier: 0.9.23
         version: 0.9.23(@solana/web3.js@1.95.0)
@@ -171,6 +174,36 @@ importers:
         version: 5.3.3
 
 packages:
+
+  /@0no-co/graphql.web@1.2.0(graphql@16.12.0):
+    resolution: {integrity: sha512-/1iHy9TTr63gE1YcR5idjx8UREz1s0kFhydf3bBLCXyqjhkIc6igAzTOx3zPifCwFR87tsh/4Pa9cNts6d2otw==}
+    requiresBuild: true
+    peerDependencies:
+      graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
+    peerDependenciesMeta:
+      graphql:
+        optional: true
+    dependencies:
+      graphql: 16.12.0
+    dev: false
+    optional: true
+
+  /@0no-co/graphqlsp@1.15.2(graphql@16.12.0)(typescript@5.3.3):
+    resolution: {integrity: sha512-Ys031WnS3sTQQBtRTkQsYnw372OlW72ais4sp0oh2UMPRNyxxnq85zRfU4PIdoy9kWriysPT5BYAkgIxhbonFA==}
+    requiresBuild: true
+    peerDependencies:
+      graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
+      typescript: ^5.0.0
+    dependencies:
+      '@gql.tada/internal': 1.0.8(graphql@16.12.0)(typescript@5.3.3)
+      graphql: 16.12.0
+      typescript: 5.3.3
+    dev: false
+    optional: true
+
+  /@adraffy/ens-normalize@1.10.1:
+    resolution: {integrity: sha512-96Z2IP3mYmF1Xg2cDm8f1gWGf/HUVedQ3FMifV4kG/PQ4yEP51xDtRAEfhVNt5f/uzpNkZHwWQuUcu6D6K+Ekw==}
+    dev: false
 
   /@adraffy/ens-normalize@1.11.1:
     resolution: {integrity: sha512-nhCBV3quEgesuf7c7KYfperqSS14T8bYuvJ8PcLJp6znkZpFc0AuW4qBtr8eKVyPPe/8RSr7sglCWPU5eaxwKQ==}
@@ -964,6 +997,51 @@ packages:
     engines: {node: '>=18.0.0'}
     dev: false
 
+  /@gql.tada/cli-utils@1.7.2(@0no-co/graphqlsp@1.15.2)(graphql@16.12.0)(typescript@5.3.3):
+    resolution: {integrity: sha512-Qbc7hbLvCz6IliIJpJuKJa9p05b2Jona7ov7+qofCsMRxHRZE1kpAmZMvL8JCI4c0IagpIlWNaMizXEQUe8XjQ==}
+    requiresBuild: true
+    peerDependencies:
+      '@0no-co/graphqlsp': ^1.12.13
+      '@gql.tada/svelte-support': 1.0.1
+      '@gql.tada/vue-support': 1.0.1
+      graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
+      typescript: ^5.0.0
+    peerDependenciesMeta:
+      '@gql.tada/svelte-support':
+        optional: true
+      '@gql.tada/vue-support':
+        optional: true
+    dependencies:
+      '@0no-co/graphqlsp': 1.15.2(graphql@16.12.0)(typescript@5.3.3)
+      '@gql.tada/internal': 1.0.8(graphql@16.12.0)(typescript@5.3.3)
+      graphql: 16.12.0
+      typescript: 5.3.3
+    dev: false
+    optional: true
+
+  /@gql.tada/internal@1.0.8(graphql@16.12.0)(typescript@5.3.3):
+    resolution: {integrity: sha512-XYdxJhtHC5WtZfdDqtKjcQ4d7R1s0d1rnlSs3OcBEUbYiPoJJfZU7tWsVXuv047Z6msvmr4ompJ7eLSK5Km57g==}
+    requiresBuild: true
+    peerDependencies:
+      graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
+      typescript: ^5.0.0
+    dependencies:
+      '@0no-co/graphql.web': 1.2.0(graphql@16.12.0)
+      graphql: 16.12.0
+      typescript: 5.3.3
+    dev: false
+    optional: true
+
+  /@graphql-typed-document-node/core@3.2.0(graphql@16.12.0):
+    resolution: {integrity: sha512-mB9oAsNCm9aM3/SOv4YtBMqZbYj10R7dkq8byBqxGY/ncFwhf2oQzMV+LCRlWoDSEBJ3COiR1yeDvMtsoOsuFQ==}
+    requiresBuild: true
+    peerDependencies:
+      graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
+    dependencies:
+      graphql: 16.12.0
+    dev: false
+    optional: true
+
   /@humanwhocodes/config-array@0.11.14:
     resolution: {integrity: sha512-3T8LkOmg45BV5FICb15QQMsyUSWrQ8AygVfC7ZG32zOalnqrilm018ZVCw0eapXux8FtA33q8PSRSstjee3jSg==}
     engines: {node: '>=10.10.0'}
@@ -1285,6 +1363,39 @@ packages:
     engines: {node: '>= 10.*'}
     dev: false
 
+  /@mysten/bcs@0.11.1:
+    resolution: {integrity: sha512-xP85isNSYUCHd3O/g+TmZYmg4wK6cU8q/n/MebkIGP4CYVJZz2wU/G24xIZ3wI+0iTop4dfgA5kYrg/DQKCUzA==}
+    requiresBuild: true
+    dependencies:
+      bs58: 5.0.0
+    dev: false
+    optional: true
+
+  /@mysten/sui.js@0.50.1(typescript@5.3.3):
+    resolution: {integrity: sha512-AY0wb4n6PMTRsDGygzrrTHUK/m5KwKZ4aQcN9cayiwsq2iIhfjGo7uuqMA7Y5UiqvLCoF+z7Ig14Q5qejQ/S/w==}
+    engines: {node: '>=16'}
+    deprecated: This package has been renamed to @mysten/sui, please update to use the renamed package.
+    requiresBuild: true
+    dependencies:
+      '@graphql-typed-document-node/core': 3.2.0(graphql@16.12.0)
+      '@mysten/bcs': 0.11.1
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@scure/bip32': 1.7.0
+      '@scure/bip39': 1.6.0
+      '@suchipi/femver': 1.0.0
+      bech32: 2.0.0
+      gql.tada: 1.9.0(graphql@16.12.0)(typescript@5.3.3)
+      graphql: 16.12.0
+      superstruct: 1.0.4
+      tweetnacl: 1.0.3
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - typescript
+    dev: false
+    optional: true
+
   /@napi-rs/wasm-runtime@0.2.12:
     resolution: {integrity: sha512-ZVWUcfwY4E/yPitQJl481FjFo3K22D6qF0DuFH6Y/nbnE11GY5uguDxZMGXPQ8WQ0128MXQD7TnfHyK4oWoIJQ==}
     requiresBuild: true
@@ -1408,6 +1519,12 @@ packages:
     engines: {node: ^14.21.3 || >=16}
     dev: false
 
+  /@noble/curves@1.2.0:
+    resolution: {integrity: sha512-oYclrNgRaM9SsBUBVbb8M6DTV7ZHRTKugureoYEncY5c65HOmRzvSiTE3y5CYaPYJA/GVkrhXEoF0M3Ya9PMnw==}
+    dependencies:
+      '@noble/hashes': 1.3.2
+    dev: false
+
   /@noble/curves@1.4.2:
     resolution: {integrity: sha512-TavHr8qycMChk8UwMld0ZDRvatedkzWfH8IiaeGCfymOP5i0hSCozz9vHOL0nkwk7HRMlFnAiKpS2jrUmSybcw==}
     dependencies:
@@ -1454,6 +1571,11 @@ packages:
     engines: {node: '>= 20.19.0'}
     dependencies:
       '@noble/hashes': 2.0.1
+    dev: false
+
+  /@noble/hashes@1.3.2:
+    resolution: {integrity: sha512-MVC8EAQp7MvEcm30KWENFjgR+Mkmf+D189XJTkFIlwohU5hcBbn1ZkKq7KVTi2Hme3PMGF390DaL52beVrIihQ==}
+    engines: {node: '>= 16'}
     dev: false
 
   /@noble/hashes@1.4.0:
@@ -1544,6 +1666,269 @@ packages:
       '@particle-network/auth': 1.3.1
       '@solana/web3.js': 1.95.0
       bs58: 5.0.0
+    dev: false
+
+  /@phantom/api-key-stamper@1.0.2(typescript@5.3.3):
+    resolution: {integrity: sha512-vpRz1PM3vWL4ke02wmPFrHbuwIApnrgze+PlCq/i5Hzqu6mxLqf8NIr/derHQclOxLZ4HbmXD/Ln3y+w8jjzPg==}
+    dependencies:
+      '@phantom/base64url': 1.0.2
+      '@phantom/crypto': 1.0.2
+      '@phantom/sdk-types': 1.0.2(typescript@5.3.3)
+      axios: 1.13.2
+      bs58: 6.0.0
+      buffer: 6.0.3
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - typescript
+      - utf-8-validate
+    dev: false
+
+  /@phantom/base64url@1.0.2:
+    resolution: {integrity: sha512-a94zCNSYfNkAqG2InCvXsYbYRCYh0o5ySU3H+18YZY8qXgN6+4V/1arD92VWxyKmZ3Ck3/1WoIGocJSwcPhcIg==}
+    dev: false
+
+  /@phantom/browser-injected-sdk@1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3):
+    resolution: {integrity: sha512-qDKmH1QVz2lirh5d+PvlsxGsgfHRPIQEXdo2f4QY4QfRDGZydipMMT2+pE1wMj1pPuvyfld3g5TzOxl5+5jZ8g==}
+    dependencies:
+      '@phantom/chain-interfaces': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/constants': 1.0.2
+      '@phantom/sdk-types': 1.0.2(typescript@5.3.3)
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - typescript
+      - utf-8-validate
+      - zod
+    dev: false
+
+  /@phantom/browser-sdk@1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3):
+    resolution: {integrity: sha512-Jtw9MObMCKksfa27zyElSx1TujxE7RCMOs2+phbq8kl2nh0U47ilRz+ovmooTSRn7mcijfESG4GQJf4TrwPQYg==}
+    dependencies:
+      '@phantom/base64url': 1.0.2
+      '@phantom/browser-injected-sdk': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/chain-interfaces': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/client': 1.0.2(typescript@5.3.3)
+      '@phantom/constants': 1.0.2
+      '@phantom/embedded-provider-core': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/indexed-db-stamper': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/parsers': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/sdk-types': 1.0.2(typescript@5.3.3)
+      axios: 1.13.2
+      bs58: 6.0.0
+      buffer: 6.0.3
+      eventemitter3: 5.0.1
+      jose: 6.1.3
+      tweetnacl: 1.0.3
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - typescript
+      - utf-8-validate
+      - zod
+    dev: false
+
+  /@phantom/chain-interfaces@1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3):
+    resolution: {integrity: sha512-Zq+cGBFViFcKyTCf4HOiOpkzbg1weG1c5o1uCH9boVZEPG/mbvUUOUJN+PGM/0mIXeQeEb3zqSel01oIq9fFig==}
+    dependencies:
+      '@phantom/constants': 1.0.2
+      '@phantom/parsers': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/sdk-types': 1.0.2(typescript@5.3.3)
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - typescript
+      - utf-8-validate
+      - zod
+    dev: false
+
+  /@phantom/client@1.0.2(typescript@5.3.3):
+    resolution: {integrity: sha512-h5DUy2/CRW7mZuLCkKV4IjC3UT1v4VixarDI9N5O2at0PPe7WAiZ01Sg7pKICZ4303PFUqpp0LrwGH1znf8fag==}
+    dependencies:
+      '@phantom/api-key-stamper': 1.0.2(typescript@5.3.3)
+      '@phantom/base64url': 1.0.2
+      '@phantom/constants': 1.0.2
+      '@phantom/crypto': 1.0.2
+      '@phantom/openapi-wallet-service': 0.1.11
+      '@phantom/sdk-types': 1.0.2(typescript@5.3.3)
+      '@phantom/utils': 1.0.2
+      axios: 1.13.2
+      bs58: 6.0.0
+      buffer: 6.0.3
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - typescript
+      - utf-8-validate
+    dev: false
+
+  /@phantom/constants@1.0.2:
+    resolution: {integrity: sha512-vfzE5I6Xtfoh98x7XSu1SWMhahlZsTrtXJVdb7mqwMfSGFhpQynV2TWU0hgctFdDjzSop+TlD6lmvWvvZlTNKw==}
+    dev: false
+
+  /@phantom/crypto@1.0.2:
+    resolution: {integrity: sha512-I5BsbXafeneHA6gtz012ieyUUcqVDgEtuxCw5k3cvneoZ0lH63pHRuiEFXJbJkjAyzwgutpXaN+vbG1h3lVUBw==}
+    dependencies:
+      bs58: 5.0.0
+      buffer: 6.0.3
+      tweetnacl: 1.0.3
+    dev: false
+
+  /@phantom/embedded-provider-core@1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3):
+    resolution: {integrity: sha512-XEYrVULRk3a4JJwGfC30t2aJ2QHMdllEJv/yQxTzvVUquAp8QapaTeBosLPNJhEtdST5563gqvEHBkI6oRMREg==}
+    peerDependencies:
+      typescript: '>=4.5.0'
+    dependencies:
+      '@phantom/api-key-stamper': 1.0.2(typescript@5.3.3)
+      '@phantom/base64url': 1.0.2
+      '@phantom/chain-interfaces': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/client': 1.0.2(typescript@5.3.3)
+      '@phantom/constants': 1.0.2
+      '@phantom/parsers': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/sdk-types': 1.0.2(typescript@5.3.3)
+      '@phantom/utils': 1.0.2
+      bs58: 6.0.0
+      buffer: 6.0.3
+      eventemitter3: 5.0.1
+      typescript: 5.3.3
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - utf-8-validate
+      - zod
+    dev: false
+
+  /@phantom/indexed-db-stamper@1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3):
+    resolution: {integrity: sha512-B/xrzRJKp4DJjOG0R9A3phPgf1pG7EYmw3ZZfkNiqvnQ97nmvY3juypUsxXn5UVRBx2Pc19t8y+Ndid5yMSmCw==}
+    dependencies:
+      '@phantom/base64url': 1.0.2
+      '@phantom/crypto': 1.0.2
+      '@phantom/embedded-provider-core': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/sdk-types': 1.0.2(typescript@5.3.3)
+      bs58: 6.0.0
+      buffer: 6.0.3
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - typescript
+      - utf-8-validate
+      - zod
+    dev: false
+
+  /@phantom/openapi-wallet-service@0.1.11:
+    resolution: {integrity: sha512-EWu0qpzNjKNuO32tMYoD4Wy5yfsJdJ1OZu1RFBW7BXgFNt34t7oY0EFho5v3OPQ/jFfYDesaf6HG5cB4LYib8Q==}
+    dependencies:
+      axios: 1.13.2
+    transitivePeerDependencies:
+      - debug
+    dev: false
+
+  /@phantom/parsers@1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3):
+    resolution: {integrity: sha512-IJoZON0MRApOk0T9KYDwxclakYpiwdekCCiF+egpqVwmLaCAxmpkoamYNkmTLQSu03EyjRTzq8PKEnLMjYt/fQ==}
+    dependencies:
+      '@phantom/base64url': 1.0.2
+      '@phantom/constants': 1.0.2
+      '@phantom/sdk-types': 1.0.2(typescript@5.3.3)
+      '@phantom/utils': 1.0.2
+      '@solana/transactions': 2.3.0(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@solana/web3.js': 1.95.0
+      bs58: 6.0.0
+      buffer: 6.0.3
+      ethers: 6.16.0
+    optionalDependencies:
+      '@mysten/sui.js': 0.50.1(typescript@5.3.3)
+      bitcoinjs-lib: 6.1.7
+      viem: 2.44.4(typescript@5.3.3)(zod@3.22.4)
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - typescript
+      - utf-8-validate
+      - zod
+    dev: false
+
+  /@phantom/react-sdk@1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(react-native@0.83.1)(react@18.3.1)(typescript@5.3.3):
+    resolution: {integrity: sha512-SylI6ioRMIqR193wJSJWVvY4HJwv8KnZyLVVflZZQGL5ODHAp36aHmAx0wBoZNNZ8TUmlTTOCkSMIaZFGvbXBQ==}
+    peerDependencies:
+      react: '>=19.0.1'
+    dependencies:
+      '@phantom/browser-sdk': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/chain-interfaces': 1.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.3.3)
+      '@phantom/constants': 1.0.2
+      '@phantom/wallet-sdk-ui': 1.0.2(react-native@0.83.1)(react@18.3.1)
+      react: 18.3.1
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - bufferutil
+      - debug
+      - encoding
+      - fastestsmallesttextencoderdecoder
+      - react-native
+      - react-native-svg
+      - typescript
+      - utf-8-validate
+      - zod
+    dev: false
+
+  /@phantom/sdk-types@1.0.2(typescript@5.3.3):
+    resolution: {integrity: sha512-55Dxl0e25SbwpnfLpGNAWlauZh+E2cJrXB9QkMh7VL5mjsC4hE0FlArwYV5ZhXecalrBIvWE4oQ0uGbiEjMdUg==}
+    dependencies:
+      '@phantom/openapi-wallet-service': 0.1.11
+      '@solana/web3.js': 1.98.4(typescript@5.3.3)
+      buffer: 6.0.3
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - typescript
+      - utf-8-validate
+    dev: false
+
+  /@phantom/utils@1.0.2:
+    resolution: {integrity: sha512-JR1i33PCwE/vl2P7FREAJLKugXxe4xgNAhN6fDMcSdgn0njVaKnfudoEOpZAMCHUbqZzZmAnOaiCTH2HQnR0bg==}
+    dev: false
+
+  /@phantom/wallet-sdk-ui@1.0.2(react-native@0.83.1)(react@18.3.1):
+    resolution: {integrity: sha512-6XnXtNBfjVRJJPsKOCr+eUVdYpAq+lZqaQYZCiO7zj1WfLmotgyPvkedNvr88yIfdAP9JJo8ceXyStJK3MpGWQ==}
+    peerDependencies:
+      react: '>=19.0.0'
+      react-native: '>=0.79.0'
+      react-native-svg: '>=15.0.0'
+    peerDependenciesMeta:
+      react-native:
+        optional: true
+      react-native-svg:
+        optional: true
+    dependencies:
+      react: 18.3.1
+      react-native: 0.83.1(@babel/core@7.28.6)(@types/react@18.2.45)(react@18.3.1)
     dev: false
 
   /@pkgjs/parseargs@0.11.0:
@@ -3711,6 +4096,31 @@ packages:
       - utf-8-validate
     dev: false
 
+  /@solana/web3.js@1.98.4(typescript@5.3.3):
+    resolution: {integrity: sha512-vv9lfnvjUsRiq//+j5pBdXig0IQdtzA0BRZ3bXEP4KaIyF1CcaydWqgyzQgfZMNIsWNWmG+AUHwPy4AHOD6gpw==}
+    dependencies:
+      '@babel/runtime': 7.28.6
+      '@noble/curves': 1.9.7
+      '@noble/hashes': 1.8.0
+      '@solana/buffer-layout': 4.0.1
+      '@solana/codecs-numbers': 2.3.0(typescript@5.3.3)
+      agentkeepalive: 4.6.0
+      bn.js: 5.2.2
+      borsh: 0.7.0
+      bs58: 4.0.1
+      buffer: 6.0.3
+      fast-stable-stringify: 1.0.0
+      jayson: 4.3.0
+      node-fetch: 2.7.0
+      rpc-websockets: 9.3.2
+      superstruct: 2.0.2
+    transitivePeerDependencies:
+      - bufferutil
+      - encoding
+      - typescript
+      - utf-8-validate
+    dev: false
+
   /@solana/web3.js@1.98.4(typescript@5.9.3):
     resolution: {integrity: sha512-vv9lfnvjUsRiq//+j5pBdXig0IQdtzA0BRZ3bXEP4KaIyF1CcaydWqgyzQgfZMNIsWNWmG+AUHwPy4AHOD6gpw==}
     dependencies:
@@ -3792,6 +4202,12 @@ packages:
     transitivePeerDependencies:
       - debug
     dev: false
+
+  /@suchipi/femver@1.0.0:
+    resolution: {integrity: sha512-bprE8+K5V+DPX7q2e2K57ImqNBdfGHDIWaGI5xHxZoxbKOuQZn4wzPiUxOAHnsUr3w3xHrWXwN7gnG/iIuEMIg==}
+    requiresBuild: true
+    dev: false
+    optional: true
 
   /@swc/counter@0.1.3:
     resolution: {integrity: sha512-e2BR4lsJkkRlKZ/qCHPw9ZaSxc0MVUd7gtbtaB7aMvHeJVYe8sOB8DBZkP2DtISHGSku9sCK6T6cnY0CtXrOCQ==}
@@ -4425,6 +4841,12 @@ packages:
     dependencies:
       undici-types: 6.21.0
     dev: true
+
+  /@types/node@22.7.5:
+    resolution: {integrity: sha512-jML7s2NAzMWc//QSJ1a3prpk78cOPchGvXJsC3C6R6PSMoooztvRVQEz89gmBTBY1SPMaqo5teB4uNHPdetShQ==}
+    dependencies:
+      undici-types: 6.19.8
+    dev: false
 
   /@types/prop-types@15.7.15:
     resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
@@ -5591,6 +6013,10 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  /aes-js@4.0.0-beta.5:
+    resolution: {integrity: sha512-G965FqalsNyrPqgEGON7nIx1e/OVENSgiEIzyC63haUMuvNnwIgIjMs52hlTCKhkBny7A2ORNlfY9Zu+jmGk1Q==}
+    dev: false
+
   /agent-base@7.1.4:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
@@ -6006,6 +6432,13 @@ packages:
       file-uri-to-path: 1.0.0
     dev: false
 
+  /bip174@2.1.1:
+    resolution: {integrity: sha512-mdFV5+/v0XyNYXjBS6CQPLo9ekCx4gtKZFnJm5PMto7Fs9hTTDpkkzOB7/FtluRI6JbUUAu+snTYfJRgHLZbZQ==}
+    engines: {node: '>=8.0.0'}
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /bip66@2.0.0:
     resolution: {integrity: sha512-kBG+hSpgvZBrkIm9dt5T1Hd/7xGCPEX2npoxAWZfsK1FvjgaxySEh2WizjyIstWXriKo9K9uJ4u0OnsyLDUPXQ==}
     dev: false
@@ -6013,6 +6446,20 @@ packages:
   /bitcoin-ops@1.4.1:
     resolution: {integrity: sha512-pef6gxZFztEhaE9RY9HmWVmiIHqCb2OyS4HPKkpc6CIiiOa3Qmuoylxc5P2EkU3w+5eTSifI9SEZC88idAIGow==}
     dev: false
+
+  /bitcoinjs-lib@6.1.7:
+    resolution: {integrity: sha512-tlf/r2DGMbF7ky1MgUqXHzypYHakkEnm0SZP23CJKIqNY/5uNAnMbFhMJdhjrL/7anfb/U8+AlpdjPWjPnAalg==}
+    engines: {node: '>=8.0.0'}
+    requiresBuild: true
+    dependencies:
+      '@noble/hashes': 1.8.0
+      bech32: 2.0.0
+      bip174: 2.1.1
+      bs58check: 3.0.1
+      typeforce: 1.18.0
+      varuint-bitcoin: 1.1.2
+    dev: false
+    optional: true
 
   /blake-hash@2.0.0:
     resolution: {integrity: sha512-Igj8YowDu1PRkRsxZA7NVkdFNxH5rKv5cpLxQ0CVXSIA77pVYwCPRQJ2sMew/oneUpfuYRyjG6r8SmmmnbZb1w==}
@@ -6185,6 +6632,15 @@ packages:
       create-hash: 1.2.0
       safe-buffer: 5.2.1
     dev: false
+
+  /bs58check@3.0.1:
+    resolution: {integrity: sha512-hjuuJvoWEybo7Hn/0xOrczQKKEKD63WguEjlhLExYs2wUBcebDC1jDNK17eEAD2lYfw82d5ASC1d7K3SWszjaQ==}
+    requiresBuild: true
+    dependencies:
+      '@noble/hashes': 1.8.0
+      bs58: 5.0.0
+    dev: false
+    optional: true
 
   /bs58check@4.0.0:
     resolution: {integrity: sha512-FsGDOnFg9aVI9erdriULkd/JjEWONV/lQE5aYziB5PoBsXRind56lh8doIZIc9X4HoxT5x4bLjMWN1/NB8Zp5g==}
@@ -7516,6 +7972,22 @@ packages:
       '@scure/bip39': 1.6.0
     dev: false
 
+  /ethers@6.16.0:
+    resolution: {integrity: sha512-U1wulmetNymijEhpSEQ7Ct/P/Jw9/e7R1j5XIbPRydgV2DjLVMsULDlNksq3RQnFgKoLlZf88ijYtWEXcPa07A==}
+    engines: {node: '>=14.0.0'}
+    dependencies:
+      '@adraffy/ens-normalize': 1.10.1
+      '@noble/curves': 1.2.0
+      '@noble/hashes': 1.3.2
+      '@types/node': 22.7.5
+      aes-js: 4.0.0-beta.5
+      tslib: 2.7.0
+      ws: 8.17.1
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+    dev: false
+
   /ev-emitter@2.1.2:
     resolution: {integrity: sha512-jQ5Ql18hdCQ4qS+RCrbLfz1n+Pags27q5TwMKvZyhp5hh2UULUYZUy1keqj6k6SYsdqIYjnmz7xyyEY0V67B8Q==}
     dev: false
@@ -8102,6 +8574,25 @@ packages:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
 
+  /gql.tada@1.9.0(graphql@16.12.0)(typescript@5.3.3):
+    resolution: {integrity: sha512-1LMiA46dRs5oF7Qev6vMU32gmiNvM3+3nHoQZA9K9j2xQzH8xOAWnnJrLSbZOFHTSdFxqn86TL6beo1/7ja/aA==}
+    hasBin: true
+    requiresBuild: true
+    peerDependencies:
+      typescript: ^5.0.0
+    dependencies:
+      '@0no-co/graphql.web': 1.2.0(graphql@16.12.0)
+      '@0no-co/graphqlsp': 1.15.2(graphql@16.12.0)(typescript@5.3.3)
+      '@gql.tada/cli-utils': 1.7.2(@0no-co/graphqlsp@1.15.2)(graphql@16.12.0)(typescript@5.3.3)
+      '@gql.tada/internal': 1.0.8(graphql@16.12.0)(typescript@5.3.3)
+      typescript: 5.3.3
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - graphql
+    dev: false
+    optional: true
+
   /graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
     dev: false
@@ -8109,6 +8600,13 @@ packages:
   /graphemer@1.4.0:
     resolution: {integrity: sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag==}
     dev: true
+
+  /graphql@16.12.0:
+    resolution: {integrity: sha512-DKKrynuQRne0PNpEbzuEdHlYOMksHSUI8Zc9Unei5gTsMNA2/vMpoMz/yKba50pejK56qj98qM0SjYxAKi13gQ==}
+    engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+    requiresBuild: true
+    dev: false
+    optional: true
 
   /gtoken@8.0.0:
     resolution: {integrity: sha512-+CqsMbHPiSTdtSO14O51eMNlrp9N79gmeqmXeouJOhfucAedHw9noVe/n5uJk3tbKE6a+6ZCQg3RPhVhHByAIw==}
@@ -8784,6 +9282,10 @@ packages:
     resolution: {integrity: sha512-/imKNG4EbWNrVjoNC/1H5/9GFy+tqjGBHCaSsN+P2RnPqjsLmv6UD3Ej+Kj8nBWaRAwyk7kK5ZUc+OEatnTR3A==}
     hasBin: true
     dev: true
+
+  /jose@6.1.3:
+    resolution: {integrity: sha512-0TpaTfihd4QMNwrz/ob2Bp7X04yuxJkjRGi4aKmOqwhov54i6u79oCv7T+C7lo70MKH6BesI3vscD1yb/yzKXQ==}
+    dev: false
 
   /js-base64@3.7.8:
     resolution: {integrity: sha512-hNngCeKxIUQiEUN3GPJOkz4wF/YvdUdbNL9hsBcMQTkKzboD7T/q3OYOuuPZLUE6dBxSGpwhk5mwuDud7JVAow==}
@@ -9955,58 +10457,6 @@ packages:
   /pngjs@5.0.0:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
     engines: {node: '>=10.13.0'}
-    dev: false
-
-  /pnp-sdk@0.2.3(@coral-xyz/anchor@0.32.1)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3):
-    resolution: {integrity: sha512-kWBRY3ThCxqeyejhHIGqnvJox0DJEuHT3iZMXq5sUIZagJ9HL2Mp1iVN48moOEPKXvSzzRPDrIcd7P7bl8fVJw==}
-    hasBin: true
-    peerDependencies:
-      '@coral-xyz/anchor': '>=0.29.0'
-    dependencies:
-      '@coral-xyz/anchor': 0.32.1
-      '@solana/spl-token': 0.4.14(@solana/web3.js@1.98.4)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)
-      '@solana/web3.js': 1.98.4(typescript@5.9.3)
-      '@types/express': 5.0.6
-      bn.js: 5.2.2
-      bs58: 5.0.0
-      chalk: 5.6.2
-      dotenv: 17.2.3
-      express: 5.2.1
-      pnp-sdk: 0.2.4(@coral-xyz/anchor@0.32.1)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)
-      zod: 3.25.76
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - fastestsmallesttextencoderdecoder
-      - supports-color
-      - typescript
-      - utf-8-validate
-    dev: false
-
-  /pnp-sdk@0.2.4(@coral-xyz/anchor@0.32.1)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3):
-    resolution: {integrity: sha512-bmYT7rweeo+ff6JaTyctETfbv2bJh61NQt1RuceEAC/bA7kOK30DZvcq+5XyBcsSCNp5bAiJE9F+acKIjj/gCw==}
-    hasBin: true
-    peerDependencies:
-      '@coral-xyz/anchor': '>=0.29.0'
-    dependencies:
-      '@coral-xyz/anchor': 0.32.1
-      '@solana/spl-token': 0.4.14(@solana/web3.js@1.98.4)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)
-      '@solana/web3.js': 1.98.4(typescript@5.9.3)
-      '@types/express': 5.0.6
-      bn.js: 5.2.2
-      bs58: 5.0.0
-      chalk: 5.6.2
-      dotenv: 17.2.3
-      express: 5.2.1
-      pnp-sdk: 0.2.6(@coral-xyz/anchor@0.32.1)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3)
-      zod: 3.25.76
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - fastestsmallesttextencoderdecoder
-      - supports-color
-      - typescript
-      - utf-8-validate
     dev: false
 
   /pnp-sdk@0.2.6(@coral-xyz/anchor@0.32.1)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.3):
@@ -11303,6 +11753,13 @@ packages:
     resolution: {integrity: sha512-4AOeU+P5UuE/4nOUkmcQdW5y7i9ndt1cQd/3iUe+LTz3RxESf/W/5lg4B74HbDMMv8PHnPnGCQFH45kBcrQYoQ==}
     dev: false
 
+  /superstruct@1.0.4:
+    resolution: {integrity: sha512-7JpaAoX2NGyoFlI9NBh66BQXGONc+uE+MRS5i2iOBKuS4e+ccgMDjATgZldkah+33DakBxDHiss9kvUcGAO8UQ==}
+    engines: {node: '>=14.0.0'}
+    requiresBuild: true
+    dev: false
+    optional: true
+
   /superstruct@2.0.2:
     resolution: {integrity: sha512-uV+TFRZdXsqXTL2pRvujROjdZQ4RAlBUS5BTh9IGm+jTqQntYThciG/qu57Gs69yjnVUSqdxF9YLmSnpupBW9A==}
     engines: {node: '>=14.0.0'}
@@ -11504,6 +11961,10 @@ packages:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
     dev: false
 
+  /tslib@2.7.0:
+    resolution: {integrity: sha512-gLXCKdN1/j47AiHiOkJN69hJmcbGTHI0ImLmbYLHykhgeN0jVGola9yVjFgzCUklsZQMW55o+dW7IXv3RCXDzA==}
+    dev: false
+
   /tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
@@ -11663,6 +12124,10 @@ packages:
 
   /undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+
+  /undici-types@6.19.8:
+    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
+    dev: false
 
   /undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
@@ -11888,6 +12353,14 @@ packages:
       use-sync-external-store: 1.2.0(react@18.3.1)
     dev: false
 
+  /varuint-bitcoin@1.1.2:
+    resolution: {integrity: sha512-4EVb+w4rx+YfVM32HQX42AbbT7/1f5zwAYhIujKXKk8NQK+JfRVl3pqT3hjNn/L+RstigmGGKVwHA/P0wgITZw==}
+    requiresBuild: true
+    dependencies:
+      safe-buffer: 5.2.1
+    dev: false
+    optional: true
+
   /varuint-bitcoin@2.0.0:
     resolution: {integrity: sha512-6QZbU/rHO2ZQYpWFDALCDSRsXbAs1VOEmXAxtbtjLtKuMJ/FQ8YbhfxlaiKv5nklci0M6lZtlZyxo9Q+qNnyog==}
     dependencies:
@@ -12105,6 +12578,19 @@ packages:
     peerDependencies:
       bufferutil: ^4.0.1
       utf-8-validate: ^5.0.2
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+    dev: false
+
+  /ws@8.17.1:
+    resolution: {integrity: sha512-6XQFvXTkbfUOZOKKILFG1PDK2NDQs4azKQl26T0YS5CxqWLgXajbPZ+h4gZekJyRqFU8pvnbAbbs/3TgRPy+GQ==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
     peerDependenciesMeta:
       bufferutil:
         optional: true

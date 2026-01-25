@@ -1,14 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp, Clock, Users } from 'lucide-react';
+import { TrendingUp, Clock, Users, Zap } from 'lucide-react';
 import { Market, calculatePriceFromReserves, getMarketTimeRemaining, isMarketActive } from '@/lib/api';
 
 interface MarketCardProps {
   market: Market;
+  isTracked?: boolean;
 }
 
-export default function MarketCard({ market }: MarketCardProps) {
+export default function MarketCard({ market, isTracked = false }: MarketCardProps) {
   const prices = calculatePriceFromReserves(
     market.account.yes_token_supply_minted,
     market.account.no_token_supply_minted
@@ -28,12 +29,20 @@ export default function MarketCard({ market }: MarketCardProps) {
       `}>
         {/* Status badge */}
         <div className="flex items-center justify-between mb-3">
-          <span className={`
-            text-xs font-bold px-3 py-1 rounded-full border-2 border-dark
-            ${active ? 'bg-neon-green' : 'bg-gray-200'}
-          `}>
-            {market.account.resolved ? 'Resolved' : active ? 'Active' : 'Ended'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`
+              text-xs font-bold px-3 py-1 rounded-full border-2 border-dark
+              ${active ? 'bg-neon-green' : 'bg-gray-200'}
+            `}>
+              {market.account.resolved ? 'Resolved' : active ? 'Active' : 'Ended'}
+            </span>
+            {isTracked && (
+              <span className="text-xs font-bold px-2 py-1 rounded-full bg-neon-purple text-white flex items-center gap-1">
+                <Zap className="w-3 h-3" />
+                Dark Alpha
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-1 text-sm text-dark/60">
             <Clock className="w-4 h-4" />
             <span>{timeRemaining}</span>
@@ -82,8 +91,17 @@ export default function MarketCard({ market }: MarketCardProps) {
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            <span>PNP Market</span>
+            {isTracked ? (
+              <>
+                <Zap className="w-4 h-4 text-neon-purple" />
+                <span className="text-neon-purple font-medium">Dark Alpha</span>
+              </>
+            ) : (
+              <>
+                <Users className="w-4 h-4" />
+                <span>PNP Market</span>
+              </>
+            )}
           </div>
         </div>
       </div>

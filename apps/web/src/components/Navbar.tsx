@@ -32,6 +32,7 @@ const Navbar = () => {
           <div className="hidden md:flex items-center bg-white/80 backdrop-blur-sm px-2 py-1 rounded-2xl border-2 border-dark shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
             <NavLink href="/dashboard">Dashboard</NavLink>
             <NavLink href="/markets">Markets</NavLink>
+            <NavLink href="/portfolio">Portfolio</NavLink>
             <NavLink href="/agent">AI Agent</NavLink>
           </div>
 

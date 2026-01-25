@@ -1,27 +1,39 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Filter, RefreshCw, TrendingUp, Shield } from 'lucide-react';
+import { Search, Filter, RefreshCw, TrendingUp, Shield, Plus, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import MarketCard from '@/components/MarketCard';
+import CreateMarketModal from '@/components/CreateMarketModal';
 import { Button } from '@/components/ui/button';
-import { fetchMarkets, Market, isMarketActive } from '@/lib/api';
+import { fetchMarkets, fetchTrackedMarkets, Market, isMarketActive, CreateMarketResult } from '@/lib/api';
 
-type FilterType = 'all' | 'active' | 'resolved';
+type FilterType = 'all' | 'active' | 'resolved' | 'tracked';
 
 export default function MarketsPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
+  const [trackedAddresses, setTrackedAddresses] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filter, setFilter] = useState<FilterType>('active');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const loadMarkets = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchMarkets();
+      // Fetch both markets and tracked info in parallel
+      const [data, trackedData] = await Promise.all([
+        fetchMarkets(),
+        fetchTrackedMarkets().catch(() => null),
+      ]);
       setMarkets(data);
+
+      // Track which markets are ours
+      if (trackedData?.markets) {
+        setTrackedAddresses(new Set(trackedData.markets.map(m => m.publicKey)));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load markets');
     } finally {
@@ -33,11 +45,19 @@ export default function MarketsPage() {
     loadMarkets();
   }, []);
 
+  const handleMarketCreated = (result: CreateMarketResult) => {
+    // Add the new market address to tracked set
+    setTrackedAddresses(prev => new Set(Array.from(prev).concat([result.marketAddress])));
+    // Reload markets to get the new one
+    loadMarkets();
+  };
+
   // Filter and search markets
   const filteredMarkets = markets
     .filter((market) => {
       if (filter === 'active') return isMarketActive(market);
       if (filter === 'resolved') return market.account.resolved;
+      if (filter === 'tracked') return trackedAddresses.has(market.publicKey);
       return true;
     })
     .filter((market) =>
@@ -47,6 +67,7 @@ export default function MarketsPage() {
 
   const activeCount = markets.filter(isMarketActive).length;
   const resolvedCount = markets.filter((m) => m.account.resolved).length;
+  const trackedCount = trackedAddresses.size;
 
   return (
     <div className="min-h-screen bg-off-white">
@@ -76,6 +97,14 @@ export default function MarketsPage() {
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
+              <Button
+                variant="hero"
+                size="sm"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus className="w-4 h-4" />
+                Create Market
+              </Button>
             </div>
           </div>
 
@@ -92,9 +121,9 @@ export default function MarketsPage() {
               icon={<TrendingUp className="w-5 h-5 text-neon-green" />}
             />
             <StatCard
-              label="Resolved"
-              value={resolvedCount.toLocaleString()}
-              icon={<TrendingUp className="w-5 h-5 text-gray-400" />}
+              label="Dark Alpha Markets"
+              value={trackedCount.toLocaleString()}
+              icon={<Zap className="w-5 h-5 text-neon-purple" />}
             />
             <StatCard
               label="Network"
@@ -120,14 +149,14 @@ export default function MarketsPage() {
               />
             </div>
 
-            <div className="flex gap-2">
-              {(['all', 'active', 'resolved'] as FilterType[]).map((f) => (
+            <div className="flex gap-2 flex-wrap">
+              {(['all', 'active', 'tracked', 'resolved'] as FilterType[]).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
                   className={`
                     px-4 py-3 rounded-xl border-2 border-dark font-bold capitalize
-                    transition-all
+                    transition-all flex items-center gap-2
                     ${
                       filter === f
                         ? 'bg-dark text-white shadow-none translate-x-[2px] translate-y-[2px]'
@@ -135,8 +164,12 @@ export default function MarketsPage() {
                     }
                   `}
                 >
-                  <Filter className="w-4 h-4 inline mr-2" />
-                  {f}
+                  {f === 'tracked' ? (
+                    <Zap className="w-4 h-4" />
+                  ) : (
+                    <Filter className="w-4 h-4" />
+                  )}
+                  {f === 'tracked' ? 'Dark Alpha' : f}
                 </button>
               ))}
             </div>
@@ -175,7 +208,11 @@ export default function MarketsPage() {
           {!loading && filteredMarkets.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredMarkets.map((market) => (
-                <MarketCard key={market.publicKey} market={market} />
+                <MarketCard
+                  key={market.publicKey}
+                  market={market}
+                  isTracked={trackedAddresses.has(market.publicKey)}
+                />
               ))}
             </div>
           )}
@@ -187,15 +224,30 @@ export default function MarketsPage() {
                 <Search className="w-10 h-10 text-gray-400" />
               </div>
               <h3 className="font-bold text-xl mb-2">No markets found</h3>
-              <p className="text-dark/60">
+              <p className="text-dark/60 mb-4">
                 {searchQuery
                   ? 'Try a different search term'
+                  : filter === 'tracked'
+                  ? 'Create your first Dark Alpha market!'
                   : 'No markets match the current filter'}
               </p>
+              {filter === 'tracked' && (
+                <Button variant="hero" onClick={() => setShowCreateModal(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Market
+                </Button>
+              )}
             </div>
           )}
         </div>
       </main>
+
+      {/* Create Market Modal */}
+      <CreateMarketModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSuccess={handleMarketCreated}
+      />
     </div>
   );
 }

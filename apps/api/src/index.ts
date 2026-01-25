@@ -25,6 +25,7 @@ import tradingRoutes from './routes/trading';
 import agentRoutes from './routes/agent';
 import privacyRoutes from './routes/privacy';
 import pricesRoutes from './routes/prices';
+import orderbookRoutes from './routes/orderbook';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -40,6 +41,7 @@ app.use('/api/trading', tradingRoutes);
 app.use('/api/agent', agentRoutes);
 app.use('/api/privacy', privacyRoutes);
 app.use('/api/prices', pricesRoutes);
+app.use('/api/orderbook', orderbookRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -132,6 +132,86 @@ export async function triggerAgentScan(): Promise<{
   return json.data!;
 }
 
+// Order Book API (Privacy-Preserving)
+export interface SubmitPositionResult {
+  positionId: string;
+  commitmentHash: string;
+  status: string;
+  message: string;
+}
+
+export interface MarketAggregate {
+  marketAddress: string;
+  totalPositions: number;
+  yesPositions: number;
+  noPositions: number;
+  estimatedYesProbability: number;
+  estimatedNoProbability: number;
+  privacyNote: string;
+}
+
+export interface OrderBookStats {
+  totalMarkets: number;
+  totalPositions: number;
+  totalEncryptedVolume: string;
+  uniqueWallets: number;
+  markets: Array<{
+    marketAddress: string;
+    totalPositions: number;
+    yesProbability: number;
+    noProbability: number;
+  }>;
+  privacyFeatures: string[];
+}
+
+export async function submitEncryptedPosition(params: {
+  walletAddress: string;
+  marketAddress: string;
+  encryptedTrade: EncryptedTrade;
+  side: 'yes' | 'no';
+}): Promise<SubmitPositionResult> {
+  const res = await fetch(`${API_BASE}/api/orderbook/submit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      walletAddress: params.walletAddress,
+      marketAddress: params.marketAddress,
+      encryptedAmount: params.encryptedTrade.encryptedAmount,
+      encryptedSide: params.encryptedTrade.encryptedSide,
+      commitmentHash: params.encryptedTrade.commitmentHash,
+      side: params.side,
+    }),
+  });
+  const json: ApiResponse<SubmitPositionResult> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to submit position');
+  return json.data!;
+}
+
+export async function getMarketAggregate(marketId: string): Promise<MarketAggregate> {
+  const res = await fetch(`${API_BASE}/api/orderbook/market/${marketId}/aggregate`);
+  const json: ApiResponse<MarketAggregate> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to get aggregate');
+  return json.data!;
+}
+
+export async function getOrderBookStats(): Promise<OrderBookStats> {
+  const res = await fetch(`${API_BASE}/api/orderbook/stats`);
+  const json: ApiResponse<OrderBookStats> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to get stats');
+  return json.data!;
+}
+
+export async function verifyCommitment(commitmentHash: string): Promise<{
+  exists: boolean;
+  marketAddress?: string;
+  timestamp?: number;
+}> {
+  const res = await fetch(`${API_BASE}/api/orderbook/verify/${commitmentHash}`);
+  const json: ApiResponse<{ exists: boolean; marketAddress?: string; timestamp?: number }> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to verify');
+  return json.data!;
+}
+
 // Utility functions
 export function calculatePriceFromReserves(
   yesSupply: string,
@@ -169,4 +249,103 @@ export function getMarketTimeRemaining(market: Market): string {
   if (days > 0) return `${days}d ${hours}h`;
   if (hours > 0) return `${hours}h`;
   return 'Ending soon';
+}
+
+// Market Creation API
+export interface CreateMarketParams {
+  question: string;
+  initialLiquidity: number; // In token units (1 token = 1_000_000 units for 6 decimals)
+  endTimeHours: number;     // Hours from now until market ends
+  collateralMint?: string;  // Optional custom token mint
+  useCustomOracle?: boolean; // Use custom oracle for settlement (we control resolution)
+}
+
+export interface CreateMarketResult {
+  marketAddress: string;
+  signature: string;
+  question: string;
+  creator: string;
+  endTime: string;
+  isCustomOracle: boolean;
+  tracked: {
+    publicKey: string;
+    question: string;
+    creator: string;
+    createdAt: number;
+    yesProbability: number;
+    noProbability: number;
+  };
+}
+
+export async function createMarket(params: CreateMarketParams): Promise<CreateMarketResult> {
+  const res = await fetch(`${API_BASE}/api/markets/create`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const json: ApiResponse<CreateMarketResult> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to create market');
+  return json.data!;
+}
+
+// Tracked Markets API
+export interface TrackedMarketsResponse {
+  totalMarkets: number;
+  activeMarkets: number;
+  customOracleMarkets: number;
+  recentMarkets: Array<{
+    publicKey: string;
+    question: string;
+    creator: string;
+    createdAt: number;
+  }>;
+  markets: Array<{
+    publicKey: string;
+    question: string;
+    creator: string;
+    createdAt: number;
+    yesProbability: number;
+    noProbability: number;
+  }>;
+}
+
+export async function fetchTrackedMarkets(): Promise<TrackedMarketsResponse> {
+  const res = await fetch(`${API_BASE}/api/markets/tracked`);
+  const json: ApiResponse<TrackedMarketsResponse> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch tracked markets');
+  return json.data!;
+}
+
+// Portfolio / Positions API
+export interface Position {
+  id: string;
+  marketAddress: string;
+  commitmentHash: string;
+  status: 'pending' | 'active' | 'settled';
+  timestamp: number;
+  encryptedAmount: EncryptedValue;
+  encryptedSide: EncryptedValue;
+  settlement?: {
+    outcome: 'yes' | 'no';
+    isWinner: boolean;
+    settledAt: number;
+  };
+}
+
+export interface PositionsResponse {
+  walletAddress: string;
+  positionCount: number;
+  positions: Position[];
+  note: string;
+}
+
+export async function fetchMyPositions(walletAddress: string): Promise<PositionsResponse> {
+  const res = await fetch(`${API_BASE}/api/orderbook/my-positions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ walletAddress }),
+  });
+  const json: ApiResponse<PositionsResponse> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch positions');
+  return json.data!;
 }
