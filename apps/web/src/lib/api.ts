@@ -4,6 +4,10 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// DAC SPL token mint address (Dark Alpha Confidential)
+// Standard SPL token compatible with PNP markets
+export const DAC_MINT = 'JBxiN5BBM8ottNaUUpWw6EFtpMRd6iTnmLYrhZB5ArMo';
+
 export interface Market {
   publicKey: string;
   account: {
@@ -23,6 +27,15 @@ export interface Market {
     market_reserves: string;
     winning_token_id: { None: Record<string, never> } | { Some: string };
   };
+  isDarkMarket?: boolean;
+  privacyNote?: string;
+}
+
+/**
+ * Check if a market uses DAC as collateral (Dark Market)
+ */
+export function isDarkMarket(market: Market): boolean {
+  return market.account.collateral_token === DAC_MINT || market.isDarkMarket === true;
 }
 
 export interface MarketPrices {
@@ -94,19 +107,27 @@ export async function encryptTrade(params: {
   return json.data!;
 }
 
+export interface TradeResult {
+  signature: string | null;
+  market: string;
+  side: 'yes' | 'no';
+  amount: string;
+  executedAt: string;
+}
+
 export async function executeTrade(params: {
   market: string;
   side: 'yes' | 'no';
   amount: string;
-}): Promise<unknown> {
+}): Promise<TradeResult> {
   const res = await fetch(`${API_BASE}/api/trading/execute`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
-  const json: ApiResponse<unknown> = await res.json();
+  const json: ApiResponse<TradeResult> = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to execute trade');
-  return json.data;
+  return json.data!;
 }
 
 // Agent API
@@ -370,5 +391,76 @@ export async function fetchOrderbookActivity(limit: number = 50): Promise<Activi
   const res = await fetch(`${API_BASE}/api/orderbook/activity?limit=${limit}`);
   const json: ApiResponse<ActivityFeedResponse> = await res.json();
   if (!json.success) throw new Error(json.error || 'Failed to fetch activity');
+  return json.data!;
+}
+
+// =============================================================================
+// Dark Markets API (Privacy-Preserving Markets using DAC Tokens)
+// =============================================================================
+
+export interface DarkMarketsResponse {
+  count: number;
+  data: Market[];
+  collateralInfo: {
+    token: string;
+    mint: string;
+    privacy: string;
+  };
+}
+
+/**
+ * Fetch all Dark Markets (markets using DAC as collateral)
+ * These are privacy-preserving markets where bet amounts are encrypted
+ */
+export async function fetchDarkMarkets(): Promise<Market[]> {
+  const res = await fetch(`${API_BASE}/api/dark-markets`);
+  const json: ApiResponse<DarkMarketsResponse> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch dark markets');
+  return json.data?.data || [];
+}
+
+export interface PrepareDarkBetResult {
+  transaction: string; // Base64 encoded transaction
+  message: string;
+  estimatedFee: number;
+  privacyNote: string;
+}
+
+/**
+ * Prepare a bet on a Dark Market
+ * This creates a transaction that:
+ * 1. Auto-wraps user's USDC to DAC
+ * 2. Places the bet using DAC
+ * The transaction is unsigned - user signs with their wallet
+ */
+export async function prepareDarkBet(params: {
+  marketAddress: string;
+  side: 'yes' | 'no';
+  amountUsdc: number;
+  walletAddress: string;
+}): Promise<PrepareDarkBetResult> {
+  const res = await fetch(`${API_BASE}/api/dark-markets/prepare-bet`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  });
+  const json: ApiResponse<PrepareDarkBetResult> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to prepare dark bet');
+  return json.data!;
+}
+
+export interface DarkBalanceInfo {
+  hasAccount: boolean;
+  balanceHandle: string | null;
+  note: string;
+}
+
+/**
+ * Get user's DAC (encrypted) balance info
+ */
+export async function fetchDarkBalance(walletAddress: string): Promise<DarkBalanceInfo> {
+  const res = await fetch(`${API_BASE}/api/dark-markets/balance/${walletAddress}`);
+  const json: ApiResponse<DarkBalanceInfo> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch dark balance');
   return json.data!;
 }

@@ -1,310 +1,174 @@
-# Dark Alpha - Privacy-Preserving Prediction Markets
+# Dark Alpha
 
-## Executive Summary
+Privacy for prediction markets on Solana. Hide your bet sizes from front-runners.
 
-Dark Alpha is a privacy-preserving prediction market platform that solves **alpha leakage** through encrypted position management. We combine Inco Network's confidential computing with PNP Exchange's prediction markets to create a system where individual positions remain hidden while market efficiency is preserved.
+## The Problem
 
----
+Prediction markets are transparent by design. When you place a bet, everyone sees it:
+- Your wallet address
+- The amount you bet
+- Which side you took
 
-## The Problem: Alpha Leakage in Prediction Markets
+This creates problems.
 
-Current prediction markets suffer from **complete position transparency**, enabling:
+If you have conviction on a market and want to bet big, bots see your order the moment it hits. They copy it. They front-run it. By the time your trade executes, the price has moved against you.
 
-| Problem | Impact | Who's Affected |
-|---------|--------|----------------|
-| **Front-running** | Whales see retail orders, trade ahead | Retail traders lose edge |
-| **Strategy copying** | Competitors clone successful strategies | Alpha generators |
-| **Whale watching** | Large positions signal information | Institutional traders |
-| **Market manipulation** | Visible positions enable targeted attacks | All participants |
+Large traders lose their edge. Retail traders get squeezed. Market makers face adverse selection. The people with real information have no way to profit from it without revealing that information.
 
-**Example:** A trader with $100,000 conviction on "BTC > $50k" places their bet. Within seconds, bots see the large position and copy it, diluting the trader's potential returns. The original trader's alpha is extracted by faster actors.
+## Our Solution
 
----
+Dark Alpha encrypts your bet amounts using Fully Homomorphic Encryption.
 
-## Our Solution: Encrypted Order Book Architecture
+When you bet on a Dark Market:
+1. Your USDC is wrapped into DAC (Dark Alpha Confidential) tokens
+2. The amount is encrypted using Inco Network's FHE
+3. Your bet is placed with the encrypted amount
+4. Other traders see activity happening, but not the size
+5. Market resolves, DAC is unwrapped back to USDC
 
-### Why Not Direct Integration?
+You interact with USDC. We handle the privacy layer automatically.
 
-Our initial approach was to encrypt values with Inco SDK and submit them directly to PNP's on-chain program. **This doesn't work because:**
+## How It Works
 
-1. **PNP's program expects plaintext amounts** - The on-chain program processes raw USDC amounts
-2. **No program-level Inco integration** - PNP wasn't built to decrypt Inco ciphertext
-3. **Transaction transparency** - Even with client-side encryption, the actual Solana transaction reveals amounts
+### DAC Token
 
-We evaluated three alternatives:
+We built a custom SPL token program called DAC (Dark Alpha Confidential).
 
-| Approach | Feasibility | Why We Chose/Rejected |
-|----------|-------------|----------------------|
-| **Token-2022 Confidential Transfers** | Currently disabled | Security audit in progress on mainnet/devnet |
-| **Modified PNP Program** | Requires protocol changes | Out of scope for hackathon |
-| **Off-Chain Encrypted Order Book** | Implementable now | **Our chosen approach** |
+When you deposit USDC:
+- USDC goes into a vault
+- You receive an encrypted balance
+- The balance is stored as a 128-bit ciphertext handle
+- Only you can decrypt it (through Inco's co-validator)
 
-### The Architecture We Built
+The vault is 1:1 backed. Every DAC token has USDC behind it.
 
+### Dark Markets
+
+Markets using DAC as collateral are Dark Markets. They work like normal prediction markets except:
+
+| Normal Market | Dark Market |
+|---------------|-------------|
+| Bet sizes visible | Bet sizes encrypted |
+| Easy to front-run | Cannot see individual bets |
+| Everyone copies winners | Strategy stays private |
+
+The market odds are still public. Total volume is visible. But individual positions are hidden.
+
+### The Trade Flow
+
+1. Connect Phantom wallet
+2. Select a Dark Market
+3. Enter how much USDC you want to bet
+4. We wrap your USDC to DAC in the same transaction
+5. The bet is placed with your encrypted DAC
+6. You sign one transaction, done
+
+When the market resolves, winning positions are unwrapped to USDC automatically.
+
+## Technical Details
+
+### Deployed Contracts
+
+| Component | Address (Devnet) |
+|-----------|------------------|
+| DAC Program | `ByaYNFzb2fPCkWLJCMEY4tdrfNqEAKAPJB3kDX86W5Rq` |
+| DAC SPL Mint | `JBxiN5BBM8ottNaUUpWw6EFtpMRd6iTnmLYrhZB5ArMo` |
+| Mint Authority PDA | `TtFoW2UtEqkVGiGtbwwnzMxyGk1JyneqeNGiZEhcDRJ` |
+| Inco Lightning | `5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj` |
+
+### Encryption
+
+We use Inco Network for FHE. The encryption happens through their Lightning program on Solana.
+
+When you deposit USDC:
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                    DARK ALPHA - ENCRYPTED ORDER BOOK                     │
-├─────────────────────────────────────────────────────────────────────────┤
-│                                                                          │
-│   USER FLOW                                                              │
-│   ─────────                                                              │
-│                                                                          │
-│   ┌──────────────┐      ┌─────────────────────┐      ┌───────────────┐  │
-│   │ 1. User      │      │ 2. Inco SDK         │      │ 3. Dark Alpha │  │
-│   │    enters    │─────▶│    encrypts         │─────▶│    stores     │  │
-│   │    trade     │      │    position         │      │    encrypted  │  │
-│   │              │      │                     │      │    position   │  │
-│   │ Amount: $500 │      │ → 04a7f3c9d2e...   │      │               │  │
-│   │ Side: YES    │      │ → Commitment hash   │      │               │  │
-│   └──────────────┘      └─────────────────────┘      └───────────────┘  │
-│                                                              │           │
-│                                                              ▼           │
-│   ┌──────────────────────────────────────────────────────────────────┐  │
-│   │                     ON-CHAIN (Solana/PNP)                         │  │
-│   │                                                                   │  │
-│   │   What's PUBLIC:                 What's PRIVATE:                  │  │
-│   │   • Market question              • Individual position sizes      │  │
-│   │   • Aggregated YES/NO odds       • Who bet what amount            │  │
-│   │   • Total liquidity              • Wallet ↔ position mapping      │  │
-│   │   • Commitment hashes            • Trading strategies             │  │
-│   │                                                                   │  │
-│   └──────────────────────────────────────────────────────────────────┘  │
-│                                                                          │
-│   SETTLEMENT FLOW                                                        │
-│   ───────────────                                                        │
-│                                                                          │
-│   ┌──────────────┐      ┌─────────────────────┐      ┌───────────────┐  │
-│   │ 4. Market    │      │ 5. Inco TEE         │      │ 6. Winners    │  │
-│   │    resolves  │─────▶│    decrypts         │─────▶│    receive    │  │
-│   │    (YES/NO)  │      │    positions        │      │    payouts    │  │
-│   │              │      │    verifies proofs  │      │               │  │
-│   └──────────────┘      └─────────────────────┘      └───────────────┘  │
-│                                                                          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
-
-### How Privacy is Achieved
-
-| Layer | Technology | What It Protects |
-|-------|------------|------------------|
-| **Encryption** | Inco ECIES | Position amounts, trade direction |
-| **Storage** | Dark Alpha Backend | Encrypted positions until settlement |
-| **Verification** | Commitment Hashes | Prove position exists without revealing |
-| **Settlement** | Inco TEE | Decrypt only at market resolution |
-
-### Technical Flow
-
-```typescript
-// 1. User creates encrypted trade
-const encryptedTrade = await incoService.createPrivateTrade({
-  amount: BigInt(500_000_000),  // $500 USDC
-  side: 'yes',
-  marketAddress: 'FQ4TVs...'
-});
-
-// 2. Returns encrypted data + commitment
-{
-  encryptedAmount: { handle: "04a7f3c9d2e8b1..." },  // ECIES ciphertext
-  encryptedSide: { handle: "04b2e8f1a3c7..." },
-  commitmentHash: "9bad3081c9e79b890d7ce97ace96d0d8...",  // SHA-256
-  timestamp: 1706123456789
-}
-
-// 3. Commitment hash can be posted on-chain (optional)
-// 4. Individual position stays encrypted in our backend
-// 5. At settlement, Inco TEE decrypts for payout calculation
+USDC amount (plaintext) -> Inco Lightning CPI -> Balance handle (ciphertext)
 ```
 
----
+The handle is a reference to encrypted data. Arithmetic operations (add, subtract) happen on the handles directly. The actual values never exist unencrypted on-chain.
 
-## Privacy Guarantees
+### Client-Side Signing
 
-### What's Hidden
-- **Position size**: "$500" becomes `04a7f3c9d2e8b1...`
-- **Trade direction**: "YES" becomes `04b2e8f1a3c7...`
-- **Wallet-position link**: Only commitment hash is public
-- **Strategy patterns**: Trading behavior is obscured
+Your private key never touches our server. The flow:
+1. Client requests unsigned transaction
+2. Server builds it with the right accounts
+3. Client signs with Phantom
+4. Client submits signed transaction
 
-### What's Public (for market efficiency)
-- **Aggregated odds**: Market shows 65% YES / 35% NO
-- **Total liquidity**: "$50,000 total volume"
-- **Market question**: "Will BTC exceed $50,000 by Feb 2026?"
-- **Resolution**: Market outcome (YES/NO)
+If our server gets compromised, your funds are safe.
 
-### Cryptographic Proofs
-- **Commitment hash**: Proves position exists without revealing contents
-- **Inco attestation**: Ed25519 signatures prove decryption validity
-- **Zero-knowledge verification**: Verify position validity without decrypting
+## What We Built
 
----
+### Frontend (Next.js)
+- Market browser with Dark Market filter
+- Phantom wallet integration
+- Encrypted balance display
+- One-click betting with auto-wrapping
 
-## Long-Term Roadmap
+### Backend (Express)
+- Dark Markets API
+- PNP Protocol integration
+- Privacy-preserving order book
+- AI agent for market creation
 
-### Phase 1: Hackathon POC (Current)
-- Off-chain encrypted order book
-- Inco SDK encryption working
-- PNP market integration for aggregated views
-- Demo of privacy-preserving trade flow
+### On-Chain (Anchor)
+- DAC token program
+- Inco Lightning integration
+- Deposit/withdraw/transfer instructions
 
-### Phase 2: Confidential Token Integration
-When Solana re-enables Token-2022 confidential transfers:
-- Use confidential tokens as collateral
-- Native on-chain privacy for token balances
-- Transparent market mechanics with hidden positions
+## The Stack
 
-### Phase 3: PNP Program Integration
-Working with PNP team to:
-- Add encrypted position support to PNP program
-- Inco covalidator integration for on-chain decryption
-- Fully decentralized privacy-preserving markets
-
-### Phase 4: AI-Powered Private Markets
-- Claude AI generates markets from news/price data
-- Encrypted strategy parameters for AI agents
-- Private alpha generation without information leakage
-
----
-
-## Technology Stack
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| **Frontend** | Next.js 14 | User interface |
-| **Wallet** | Phantom React SDK | Solana wallet connection |
-| **Encryption** | @inco/solana-sdk | ECIES encryption via TEE |
-| **Markets** | @pnp-sdk/sdk | Prediction market operations |
-| **Backend** | Express.js | Encrypted order book service |
-| **AI** | Gemini/Claude | Market generation |
-| **Chain** | Solana Devnet | Blockchain layer |
-
----
-
-## Demo Flow
-
-### 1. Connect Wallet
-User connects Phantom wallet (devnet mode)
-
-### 2. Browse Markets
-View 4,754+ prediction markets from PNP
-
-### 3. Place Encrypted Trade
-- Enter amount and side (YES/NO)
-- Click "Encrypt & Preview"
-- See encrypted ciphertext + commitment hash
-
-### 4. Submit Private Position
-- Position stored encrypted in Dark Alpha backend
-- Commitment hash recorded for verification
-- Market odds updated (aggregated, no individual reveal)
-
-### 5. Settlement
-- Market resolves (YES or NO wins)
-- Inco TEE decrypts positions
-- Winners receive payouts based on verified positions
-
----
+- Solana (devnet)
+- Anchor 0.31.1
+- Inco Network FHE
+- PNP Protocol
+- Next.js 14
+- Express.js
+- Phantom React SDK
+- Google Gemini (AI agent)
 
 ## Why This Matters
 
-### For Retail Traders
-- Place bets without whales front-running
-- Strategy remains private
-- Fair market participation
+### For Traders
+No more front-running. Your strategy stays private. You can bet with conviction without signaling it to everyone.
 
-### For Institutional Traders
-- Hide large position sizes
-- No signal leakage to competitors
-- Maintain information advantage
+### For Markets
+Better price discovery. Traders with real information can act on it. Liquidity improves when large orders do not move price before execution.
 
-### For Market Makers
-- Private liquidity provision strategies
-- Reduced adverse selection
-- Sustainable market making
+### For the Space
+First real implementation of private betting on Solana using FHE. Shows that prediction markets can be both transparent (market-level) and private (position-level).
 
----
+## Limitations
 
-## Competitive Advantage
+This is a hackathon project.
 
-| Feature | Dark Alpha | Traditional Markets |
-|---------|------------|---------------------|
-| Position privacy | Encrypted | Fully transparent |
-| Front-running protection | Yes | No |
-| Strategy protection | Yes | No |
-| Market efficiency | Preserved (aggregates visible) | N/A |
-| Decentralization | Hybrid (moving to full) | Varies |
+- Running on devnet only
+- DAC program not audited
+- Inco integration uses alpha endpoints
+- PNP SDK does not expose transaction building for client-side signing (workaround in place)
 
----
+Do not use with real funds.
 
-## Hackathon Deliverables
+## What's Next
 
-1. **Working Frontend** - Next.js app with wallet connection
-2. **Inco Integration** - Real encryption producing valid ciphertext
-3. **PNP Integration** - 4,754 live markets from devnet
-4. **Encrypted Order Book** - Store and manage private positions
-5. **Privacy Demo** - Full flow from encryption to commitment
-6. **AI Agent** - Market generation from news/prices
+1. Mainnet deployment after security audit
+2. Full Inco SDK integration for withdrawal decryption
+3. Work with PNP team on native DAC market support
+4. Batch transactions for multiple bets
+5. MEV protection for transaction submission
 
----
+## Demo
 
-## Team & Contact
+Visit the web app and:
+1. Connect Phantom (set to devnet)
+2. Click "Dark Alpha" filter on markets page
+3. Pick a market
+4. Enter bet amount
+5. Sign the transaction
+6. Your position is now encrypted
 
-Built for the Solana Privacy Hackathon
-
-**Technologies Used:**
-- Inco Network (@inco/solana-sdk)
-- PNP Exchange (@pnp-sdk/sdk)
-- Solana Token-2022 (future integration)
-- Anthropic Claude / Google Gemini
+Check the order book page to see aggregate activity without individual positions.
 
 ---
 
-## Appendix: API Endpoints
-
-### Privacy Endpoints
-```bash
-# Encrypt a trade
-POST /api/privacy/encrypt-trade
-{
-  "amount": "500000000",
-  "side": "yes",
-  "marketAddress": "FQ4TVs..."
-}
-
-# Encrypt portfolio
-POST /api/privacy/encrypt-portfolio
-
-# Check privacy service status
-GET /api/privacy/status
-```
-
-### Order Book Endpoints
-```bash
-# Submit encrypted position
-POST /api/orderbook/submit
-{
-  "encryptedTrade": {...},
-  "walletAddress": "7xKX..."
-}
-
-# Get market aggregate (no individual positions)
-GET /api/orderbook/market/:id/aggregate
-
-# Get my positions (requires wallet signature)
-POST /api/orderbook/my-positions
-```
-
-### Market Endpoints
-```bash
-# List all markets
-GET /api/markets
-
-# Get market details
-GET /api/markets/:id
-
-# Get market prices (aggregated)
-GET /api/trading/market/:id/info
-```
-
----
-
-*Dark Alpha: Where your alpha stays dark.*
+Built for PNP x Inco Hackathon

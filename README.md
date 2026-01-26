@@ -1,221 +1,154 @@
 # Dark Alpha
 
-Private prediction markets where position sizes remain encrypted while market odds stay public.
+Privacy-preserving prediction markets on Solana. Built for the PNP x Inco hackathon.
 
-## Overview
+## What it does
 
-Dark Alpha solves alpha leakage in prediction markets by encrypting individual bet amounts using Inco's confidential computing while maintaining transparent market odds through PNP Exchange protocols. AI agents automatically create markets from crypto news events.
+Dark Alpha lets you bet on prediction markets without revealing your position size. When you place a bet, the amount is encrypted using Fully Homomorphic Encryption (FHE) via Inco Network. Other traders can see that activity is happening, but they cannot see how much you are betting.
 
-The platform addresses a fundamental problem in current prediction markets: complete transparency of trading positions allows front-running and strategy copying. Dark Alpha preserves market efficiency while protecting trader privacy.
+Regular prediction markets have a problem: large bets move the market before you can finish executing. Everyone can see your order and front-run it. Dark Alpha fixes this by encrypting bet amounts on-chain.
 
-## Core Features
+## How it works
 
-- **Position Privacy**: Individual bet amounts encrypted client-side using Inco SDK
-- **Public Market Odds**: Aggregate prices and probability remain transparent
-- **AI Market Generation**: Claude AI creates markets from crypto news events
-- **Privacy Token Collateral**: Token-2022 confidential transfer support
-- **News Monitoring**: RSS feed analysis with privacy keyword scoring
-- **Automated Trading**: AI agents can execute private trading strategies
+1. You connect your Phantom wallet
+2. You find a market you want to bet on (Dark Markets use encrypted collateral)
+3. You place a bet with USDC - we automatically wrap it to DAC (Dark Alpha Confidential) tokens
+4. Your bet amount is encrypted using Inco FHE
+5. The market sees aggregated activity, but individual positions stay private
+6. When the market resolves, winnings are unwrapped back to USDC
 
-## Technical Architecture
+## Tech Stack
 
-### Frontend
-- Next.js application with Solana wallet integration
-- Real-time market data display
-- Encrypted position management interface
-- Public odds visualization
+- Frontend: Next.js 14, TypeScript, Tailwind CSS
+- Backend: Express.js, TypeScript
+- Blockchain: Solana (devnet)
+- Privacy: Inco Network FHE (Fully Homomorphic Encryption)
+- Markets: PNP Protocol SDK
+- Wallet: Phantom (via @phantom/react-sdk)
 
-### Backend Services
-- Express API server
-- Claude AI market generation
-- RSS news scraping and analysis
-- PNP SDK integration for market operations
-- Inco SDK for privacy operations
+## Project Structure
 
-### Blockchain Integration
-- PNP Exchange prediction markets
-- Token-2022 confidential transfers
-- Inco encrypted computations
-- Solana program interactions
+```
+Dark-Alpha-Solana/
+├── apps/
+│   ├── api/          # Express backend
+│   └── web/          # Next.js frontend
+├── programs/
+│   └── dac-token/    # DAC token Anchor program
+└── scripts/          # Deployment and utility scripts
+```
 
-## Installation
+## Deployed Addresses (Devnet)
 
-Install dependencies:
+| Component | Address |
+|-----------|---------|
+| DAC Token Program | `ByaYNFzb2fPCkWLJCMEY4tdrfNqEAKAPJB3kDX86W5Rq` |
+| DAC SPL Mint | `JBxiN5BBM8ottNaUUpWw6EFtpMRd6iTnmLYrhZB5ArMo` |
+| DAC Mint Authority PDA | `TtFoW2UtEqkVGiGtbwwnzMxyGk1JyneqeNGiZEhcDRJ` |
+| Inco Lightning Program | `5sjEbPiqgZrYwR31ahR6Uk9wf5awoX61YGg7jExQSwaj` |
+| USDC (Devnet) | `Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr` |
+
+### Dark Markets (Live on Devnet)
+
+| Market | Question |
+|--------|----------|
+| `Bs5fuKjufB7eervAud6E8aRe82CUie7t3tKaA9NiT1Vo` | Will Bitcoin reach $150,000 by end of Q2 2025? |
+| `6T3pHe6huaqjegEVRFSmcaBwZic1JyJUsy8vDc8P3XBr` | Will Ethereum flip Bitcoin in market cap by 2026? |
+| `74bB7uUGYXi4eMDrmwcyWY8NTM4iSqkGcWxVf3FtGeu6` | Will Solana process over 100,000 TPS in production by mid-2025? |
+| `96ZKsnobF4K8otLPo9LYkR1z6q1WFqjXUJj6ESwaEn1Z` | Will the Federal Reserve cut rates by more than 100bps in 2025? |
+| `H2idEMXuguKAvokMqvYRWY7YmPDjuLLxVB1nbjAEMQ5S` | Will a major tech company announce Bitcoin holdings in Q1 2025? |
+
+## Running Locally
+
+### Prerequisites
+
+- Node.js 18+
+- pnpm
+- Solana CLI (for scripts)
+- Phantom wallet browser extension
+
+### Setup
+
 ```bash
+# Install dependencies
 pnpm install
-```
 
-Configure environment variables:
-```bash
+# Copy environment file
 cp apps/api/.env.example apps/api/.env
-# Edit .env with your configuration
+# Edit .env with your keys
+
+# Start the API server
+cd apps/api && pnpm dev
+
+# In another terminal, start the web app
+cd apps/web && pnpm dev
 ```
 
-Start development servers:
-```bash
-pnpm dev:all
+The web app runs at http://localhost:3000
+The API runs at http://localhost:3001
+
+### Environment Variables
+
+The API needs these in `apps/api/.env`:
+
 ```
-
-This runs both frontend (port 3000) and backend (port 3001) concurrently.
-
-## Configuration
-
-### Required Environment Variables
-
-```bash
-# Solana Configuration
 SOLANA_RPC_URL=https://api.devnet.solana.com
-SOLANA_PRIVATE_KEY=your_base58_private_key
-
-# AI Configuration
-ANTHROPIC_API_KEY=your_claude_api_key
-
-# Privacy Token Configuration
-PRIVACY_TOKEN_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+SOLANA_PRIVATE_KEY=<your-base58-private-key>
+GOOGLE_API_KEY=<for-ai-agent-features>
 ```
 
-### Optional Configuration
+## Features
 
-```bash
-# News APIs
-COINDESK_API_KEY=your_coindesk_api_key
-NEWS_API_KEY=your_news_api_key
+### Dark Markets
+Markets that use DAC tokens as collateral. Your bet sizes are encrypted. Other traders see that positions exist but cannot see the amounts.
 
-# Server Configuration
-PORT=3001
-NODE_ENV=development
-```
+### AI Agent
+Scans news and creates prediction markets automatically. Uses Google Gemini for analysis.
 
-## Usage
+### Privacy-Preserving Order Book
+Shows aggregate market activity without revealing individual positions. Position sizes are encrypted client-side before submission.
 
-### Web Interface
+### Client-Side Signing
+Users sign their own transactions. The server never holds user private keys.
 
-Access the web interface at `http://localhost:3000`:
+## API Endpoints
 
-1. Connect your Solana wallet
-2. Browse AI-generated markets
-3. Place encrypted bets
-4. View aggregated market odds
-5. Claim winnings from resolved markets
-
-### API Endpoints
-
-Market operations:
+### Markets
 - `GET /api/markets` - List all markets
 - `GET /api/markets/:id` - Get specific market
-- `POST /api/markets` - Create new market
+- `POST /api/markets/create` - Create new market
+- `GET /api/markets/tracked` - Get markets created through Dark Alpha
 
-Trading operations:
-- `POST /api/trading/encrypt` - Encrypt trade parameters
-- `POST /api/trading/execute` - Execute trade
-- `GET /api/trading/market/:id/info` - Get market trading info
+### Dark Markets
+- `GET /api/dark-markets` - List all Dark Markets (DAC collateral)
+- `GET /api/dark-markets/:address` - Get specific Dark Market
+- `POST /api/dark-markets/prepare-bet` - Prepare encrypted bet transaction
+- `GET /api/dark-markets/balance/:wallet` - Get user's encrypted balance
 
-AI agent operations:
-- `GET /api/agent/status` - Get agent status
-- `POST /api/agent/scan` - Force news scan and market creation
+### Trading
+- `POST /api/trading/prepare` - Prepare unsigned transaction
+- `POST /api/trading/submit` - Submit signed transaction
+- `POST /api/trading/execute` - Execute trade (server-signed, deprecated)
+- `GET /api/trading/market/:id/info` - Get market prices and liquidity
 
-## AI Market Generation
+### Order Book
+- `POST /api/orderbook/submit` - Submit encrypted position
+- `GET /api/orderbook/market/:id/aggregate` - Get market aggregate
+- `GET /api/orderbook/stats` - Get global stats
+- `GET /api/orderbook/activity` - Get recent activity feed
 
-The Claude AI agent analyzes crypto news to generate relevant prediction markets:
+### Agent
+- `GET /api/agent/status` - Get AI agent status
+- `POST /api/agent/scan` - Trigger news scan
 
-### News Sources
-- CoinDesk RSS feeds
-- CoinTelegraph articles
-- Decrypt news
-- Custom RSS sources
+## Architecture
 
-### Market Categories
-- **Regulation**: Government policies, legal developments
-- **Technology**: Protocol upgrades, privacy features
-- **Adoption**: Usage metrics, enterprise integration
-- **Events**: Conferences, announcements, incidents
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for technical details.
 
-### Privacy Focus
-Markets prioritize privacy-related topics:
-- Zero-knowledge proof adoption
-- Regulatory privacy developments
-- Encryption standard updates
-- Data protection legislation
+## Limitations
 
-## Privacy Implementation
-
-### Client-Side Encryption
-```typescript
-// Encrypt bet amount
-const encryptedAmount = await inco.encryptValue(betAmount);
-
-// Trade with hidden position size
-await pnp.executeTrade({
-  market: marketId,
-  encryptedAmount,
-  side: 'yes'
-});
-```
-
-### Market Transparency
-```typescript
-// Public market data
-const marketOdds = {
-  yesPrice: 0.65,
-  noPrice: 0.35,
-  totalVolume: 125000,
-  participantCount: 47
-  // Individual positions remain private
-};
-```
-
-## Development
-
-### Project Structure
-```
-dark-alpha/
-├── apps/
-│   ├── web/          # Next.js frontend
-│   └── api/          # Express backend
-├── packages/
-│   └── shared/       # Shared utilities
-└── privacy-oracle/   # Reference AI implementation
-```
-
-### Building
-```bash
-pnpm build
-```
-
-### Testing
-```bash
-pnpm test
-```
-
-### Deployment
-
-The project is configured for Vercel deployment:
-
-```bash
-vercel --prod
-```
-
-Frontend and API can be deployed together or separately depending on infrastructure needs.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Implement changes with tests
-4. Submit a pull request
+This is a hackathon project running on Solana devnet. It has not been audited. The DAC token program is experimental. Do not use with real funds.
 
 ## License
 
 MIT
-
-## Security
-
-- Never commit private keys or API keys
-- Use environment variables for sensitive configuration
-- Validate all user inputs
-- Audit smart contract interactions
-- Test privacy implementations thoroughly
-
-## Support
-
-For issues and questions, please use the GitHub issue tracker.

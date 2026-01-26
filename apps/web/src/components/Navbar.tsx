@@ -35,6 +35,7 @@ const Navbar = () => {
             <NavLink href="/orderbook">Orderbook</NavLink>
             <NavLink href="/portfolio">Portfolio</NavLink>
             <NavLink href="/agent">AI Agent</NavLink>
+            <NavLink href="/docs">Docs</NavLink>
           </div>
 
           {/* Phantom Wallet Button */}

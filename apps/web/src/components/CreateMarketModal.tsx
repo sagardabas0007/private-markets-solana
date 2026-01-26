@@ -241,7 +241,7 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
 
             {/* Initial Liquidity */}
             <div>
-              <label className="block font-bold mb-2">Initial Liquidity</label>
+              <label className="block font-bold mb-2">Initial Liquidity (USDC)</label>
               <div className="relative">
                 <input
                   type="number"
@@ -249,7 +249,7 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
                   onChange={(e) => setInitialLiquidity(e.target.value)}
                   min="1"
                   step="0.1"
-                  className="w-full p-3 pr-16 border-2 border-dark rounded-xl
+                  className="w-full p-3 pr-20 border-2 border-dark rounded-xl
                     shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]
                     focus:outline-none focus:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]
                     focus:translate-x-[2px] focus:translate-y-[2px]
@@ -257,10 +257,12 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
                   required
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-dark/50">
-                  tokens
+                  USDC
                 </span>
               </div>
-              <p className="text-sm text-dark/50 mt-1">Minimum 1 token required</p>
+              <p className="text-sm text-dark/50 mt-1">
+                Uses Devnet USDC (Gh9Zw...GtKJr). Minimum 1 USDC required.
+              </p>
             </div>
 
             {/* Oracle Type - Hidden for MVP, default to PNP */}

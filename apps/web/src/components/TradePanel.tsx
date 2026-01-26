@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePhantom, useAccounts, AddressType } from '@phantom/react-sdk';
-import { Lock, Eye, EyeOff, AlertCircle, CheckCircle, Shield, Send, Briefcase } from 'lucide-react';
+import { Lock, Eye, EyeOff, AlertCircle, CheckCircle, Shield, Send, Briefcase, ExternalLink, Coins } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { encryptTrade, submitEncryptedPosition, MarketPrices, EncryptedTrade } from '@/lib/api';
+import { encryptTrade, submitEncryptedPosition, executeTrade, MarketPrices, EncryptedTrade, TradeResult } from '@/lib/api';
 
 interface TradePanelProps {
   marketAddress: string;
@@ -30,6 +30,7 @@ export default function TradePanel({
   const [success, setSuccess] = useState(false);
   const [encryptedData, setEncryptedData] = useState<EncryptedTrade | null>(null);
   const [positionId, setPositionId] = useState<string | null>(null);
+  const [txSignature, setTxSignature] = useState<string | null>(null);
 
   // Get the Solana address from connected accounts
   // Note: AddressType.solana returns "Solana" (capitalized)
@@ -77,11 +78,31 @@ export default function TradePanel({
       return;
     }
 
+    if (!amount || parseFloat(amount) <= 0) {
+      setError('Invalid amount');
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     setSuccess(false);
+    setTxSignature(null);
 
     try {
+      // Convert to smallest unit (6 decimals for USDC)
+      const amountInSmallestUnit = (parseFloat(amount) * 1_000_000).toString();
+
+      // Step 1: Execute the actual trade on PNP (on-chain)
+      const tradeResult: TradeResult = await executeTrade({
+        market: marketAddress,
+        side,
+        amount: amountInSmallestUnit,
+      });
+
+      // Extract signature from trade result
+      setTxSignature(tradeResult.signature);
+
+      // Step 2: Store the encrypted position in our privacy orderbook
       const result = await submitEncryptedPosition({
         walletAddress,
         marketAddress,
@@ -96,7 +117,15 @@ export default function TradePanel({
       setShowEncrypted(false);
       onTradeComplete?.();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit position');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to submit position';
+      // Provide more helpful error messages
+      if (errorMsg.includes('insufficient') || errorMsg.includes('balance')) {
+        setError('Insufficient USDC balance. The platform wallet needs more funds for trading.');
+      } else if (errorMsg.includes('Signer')) {
+        setError('Trading service not configured. Please contact support.');
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +199,18 @@ export default function TradePanel({
 
       {/* Amount Input */}
       <div className="mb-6">
-        <label className="block text-sm font-bold mb-2">Amount (USDC)</label>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-bold">Amount (USDC)</label>
+          <a
+            href="https://spl-token-faucet.com/?token-name=USDC-Dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-neon-purple hover:underline flex items-center gap-1"
+          >
+            <Coins className="w-3 h-3" />
+            Get USDC
+          </a>
+        </div>
         <div className="relative">
           <input
             type="number"
@@ -249,9 +289,22 @@ export default function TradePanel({
 
       {/* Error/Success Messages */}
       {error && (
-        <div className="flex items-center gap-2 p-3 mb-4 bg-red-100 border border-red-300 rounded-xl">
-          <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-          <span className="text-sm text-red-700">{error}</span>
+        <div className="p-3 mb-4 bg-red-100 border border-red-300 rounded-xl">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+            <span className="text-sm text-red-700">{error}</span>
+          </div>
+          {(error.includes('insufficient') || error.includes('balance') || error.includes('USDC')) && (
+            <a
+              href="https://spl-token-faucet.com/?token-name=USDC-Dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-red-600 hover:text-red-800 underline flex items-center gap-1"
+            >
+              Get USDC Devnet tokens from faucet
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
         </div>
       )}
 
@@ -259,11 +312,25 @@ export default function TradePanel({
         <div className="p-4 mb-4 bg-green-100 border border-green-300 rounded-xl">
           <div className="flex items-center gap-2 mb-2">
             <CheckCircle className="w-5 h-5 text-green-500" />
-            <span className="font-bold text-green-700">Position Submitted!</span>
+            <span className="font-bold text-green-700">Trade Executed!</span>
           </div>
           <p className="text-xs text-green-600 mb-2">
-            Your encrypted position has been stored. Only you can decrypt it.
+            Your trade was executed on-chain and your encrypted position has been stored.
           </p>
+          {txSignature && (
+            <div className="mb-2">
+              <p className="text-xs text-green-600 mb-1">Transaction:</p>
+              <a
+                href={`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-green-800 bg-green-200 px-2 py-1 rounded inline-flex items-center gap-1 hover:bg-green-300 transition-colors"
+              >
+                {txSignature.slice(0, 20)}...
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          )}
           <code className="text-xs text-green-800 bg-green-200 px-2 py-1 rounded block mb-3">
             Position ID: {positionId.slice(0, 16)}...
           </code>

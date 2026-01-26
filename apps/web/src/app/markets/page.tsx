@@ -1,34 +1,37 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Search, Filter, RefreshCw, TrendingUp, Shield, Plus, Zap } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Search, Filter, RefreshCw, TrendingUp, Shield, Plus, Zap, Lock } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import MarketCard from '@/components/MarketCard';
 import CreateMarketModal from '@/components/CreateMarketModal';
 import { Button } from '@/components/ui/button';
-import { fetchMarkets, fetchTrackedMarkets, Market, isMarketActive, CreateMarketResult } from '@/lib/api';
+import { fetchMarkets, fetchTrackedMarkets, fetchDarkMarkets, Market, isMarketActive, isDarkMarket, CreateMarketResult } from '@/lib/api';
 
-type FilterType = 'all' | 'active' | 'resolved' | 'tracked';
+type FilterType = 'all' | 'active' | 'dark' | 'resolved';
 
 export default function MarketsPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
+  const [darkMarkets, setDarkMarkets] = useState<Market[]>([]);
   const [trackedAddresses, setTrackedAddresses] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<FilterType>('active');
+  const [filter, setFilter] = useState<FilterType>('dark');
   const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const loadMarkets = async () => {
+  const loadMarkets = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch both markets and tracked info in parallel
-      const [data, trackedData] = await Promise.all([
+      // Fetch all markets, dark markets, and tracked info in parallel
+      const [allData, darkData, trackedData] = await Promise.all([
         fetchMarkets(),
+        fetchDarkMarkets().catch(() => []),
         fetchTrackedMarkets().catch(() => null),
       ]);
-      setMarkets(data);
+      setMarkets(allData);
+      setDarkMarkets(darkData);
 
       // Track which markets are ours
       if (trackedData?.markets) {
@@ -39,11 +42,11 @@ export default function MarketsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadMarkets();
-  }, []);
+  }, [loadMarkets]);
 
   const handleMarketCreated = (result: CreateMarketResult) => {
     // Add the new market address to tracked set
@@ -53,11 +56,11 @@ export default function MarketsPage() {
   };
 
   // Filter and search markets
-  const filteredMarkets = markets
+  const filteredMarkets = (filter === 'dark' ? darkMarkets : markets)
     .filter((market) => {
-      if (filter === 'active') return isMarketActive(market);
+      if (filter === 'active') return isMarketActive(market) && !isDarkMarket(market);
       if (filter === 'resolved') return market.account.resolved;
-      if (filter === 'tracked') return trackedAddresses.has(market.publicKey);
+      if (filter === 'dark') return true; // Already filtered to darkMarkets
       return true;
     })
     .filter((market) =>
@@ -65,9 +68,9 @@ export default function MarketsPage() {
     )
     .slice(0, 50); // Limit to 50 for performance
 
-  const activeCount = markets.filter(isMarketActive).length;
+  const activeCount = markets.filter(m => isMarketActive(m) && !isDarkMarket(m)).length;
   const resolvedCount = markets.filter((m) => m.account.resolved).length;
-  const trackedCount = trackedAddresses.size;
+  const darkCount = darkMarkets.length;
 
   return (
     <div className="min-h-screen bg-off-white">
@@ -116,14 +119,15 @@ export default function MarketsPage() {
               icon={<TrendingUp className="w-5 h-5" />}
             />
             <StatCard
-              label="Active Markets"
+              label="Public Markets"
               value={activeCount.toLocaleString()}
               icon={<TrendingUp className="w-5 h-5 text-neon-green" />}
             />
             <StatCard
-              label="Dark Alpha Markets"
-              value={trackedCount.toLocaleString()}
-              icon={<Zap className="w-5 h-5 text-neon-purple" />}
+              label="Dark Markets"
+              value={darkCount.toLocaleString()}
+              icon={<Lock className="w-5 h-5 text-neon-purple" />}
+              highlight
             />
             <StatCard
               label="Network"
@@ -131,6 +135,24 @@ export default function MarketsPage() {
               icon={<Shield className="w-5 h-5 text-neon-purple" />}
             />
           </div>
+
+          {/* Dark Markets Banner */}
+          {filter === 'dark' && (
+            <div className="mb-6 p-4 rounded-xl border-2 border-neon-purple bg-gradient-to-r from-neon-purple/10 to-neon-green/10">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-neon-purple/20 rounded-lg">
+                  <Lock className="w-5 h-5 text-neon-purple" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Dark Markets - Private Betting</h3>
+                  <p className="text-dark/70 text-sm mt-1">
+                    Bets on these markets are encrypted using FHE. Your position sizes remain hidden from other traders.
+                    Simply bet with USDC - we handle the privacy conversion automatically.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Search and Filter */}
           <div className="flex flex-col md:flex-row gap-4 mb-8">
@@ -150,26 +172,31 @@ export default function MarketsPage() {
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              {(['all', 'active', 'tracked', 'resolved'] as FilterType[]).map((f) => (
+              {(['all', 'active', 'dark', 'resolved'] as FilterType[]).map((f) => (
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
                   className={`
-                    px-4 py-3 rounded-xl border-2 border-dark font-bold capitalize
+                    px-4 py-3 rounded-xl border-2 font-bold capitalize
                     transition-all flex items-center gap-2
+                    ${f === 'dark' ? 'border-neon-purple' : 'border-dark'}
                     ${
                       filter === f
-                        ? 'bg-dark text-white shadow-none translate-x-[2px] translate-y-[2px]'
-                        : 'bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]'
+                        ? f === 'dark'
+                          ? 'bg-neon-purple text-white shadow-none translate-x-[2px] translate-y-[2px]'
+                          : 'bg-dark text-white shadow-none translate-x-[2px] translate-y-[2px]'
+                        : f === 'dark'
+                          ? 'bg-white shadow-[3px_3px_0px_0px_rgba(139,92,246,1)] hover:shadow-[1px_1px_0px_0px_rgba(139,92,246,1)] hover:translate-x-[2px] hover:translate-y-[2px]'
+                          : 'bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]'
                     }
                   `}
                 >
-                  {f === 'tracked' ? (
-                    <Zap className="w-4 h-4" />
+                  {f === 'dark' ? (
+                    <Lock className="w-4 h-4" />
                   ) : (
                     <Filter className="w-4 h-4" />
                   )}
-                  {f === 'tracked' ? 'Dark Alpha' : f}
+                  {f === 'dark' ? 'Dark Alpha' : f}
                 </button>
               ))}
             </div>
@@ -220,21 +247,27 @@ export default function MarketsPage() {
           {/* Empty State */}
           {!loading && filteredMarkets.length === 0 && (
             <div className="text-center py-16">
-              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-10 h-10 text-gray-400" />
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 ${filter === 'dark' ? 'bg-neon-purple/10' : 'bg-gray-100'}`}>
+                {filter === 'dark' ? (
+                  <Lock className="w-10 h-10 text-neon-purple" />
+                ) : (
+                  <Search className="w-10 h-10 text-gray-400" />
+                )}
               </div>
-              <h3 className="font-bold text-xl mb-2">No markets found</h3>
+              <h3 className="font-bold text-xl mb-2">
+                {filter === 'dark' ? 'No Dark Markets Yet' : 'No markets found'}
+              </h3>
               <p className="text-dark/60 mb-4">
                 {searchQuery
                   ? 'Try a different search term'
-                  : filter === 'tracked'
-                  ? 'Create your first Dark Alpha market!'
+                  : filter === 'dark'
+                  ? 'Dark Markets use encrypted collateral for private betting. Create one to get started.'
                   : 'No markets match the current filter'}
               </p>
-              {filter === 'tracked' && (
+              {filter === 'dark' && (
                 <Button variant="hero" onClick={() => setShowCreateModal(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Create Market
+                  Create Dark Market
                 </Button>
               )}
             </div>
@@ -256,14 +289,20 @@ function StatCard({
   label,
   value,
   icon,
+  highlight,
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
+  highlight?: boolean;
 }) {
   return (
-    <div className="bg-white border-2 border-dark rounded-xl p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-      <div className="flex items-center gap-2 text-dark/60 mb-1">
+    <div className={`rounded-xl p-4 border-2 ${
+      highlight
+        ? 'bg-gradient-to-br from-neon-purple/10 to-neon-green/10 border-neon-purple shadow-[3px_3px_0px_0px_rgba(139,92,246,1)]'
+        : 'bg-white border-dark shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]'
+    }`}>
+      <div className={`flex items-center gap-2 mb-1 ${highlight ? 'text-neon-purple' : 'text-dark/60'}`}>
         {icon}
         <span className="text-sm font-medium">{label}</span>
       </div>

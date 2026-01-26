@@ -1,5 +1,11 @@
 import { PNPClient } from 'pnp-sdk';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, Transaction, Connection, Keypair, SystemProgram } from '@solana/web3.js';
+import {
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+  getAccount
+} from '@solana/spl-token';
 
 // PNP market response types
 interface PNPMarketAccount {
@@ -53,18 +59,33 @@ export interface NormalizedMarket {
 
 export class PNPService {
   private client: PNPClient;
-  private clientWithSigner?: PNPClient;
+  private _clientWithSigner?: PNPClient;
+  private _initialized = false;
 
   constructor() {
     const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
-
     // Read-only client
     this.client = new PNPClient(rpcUrl);
+  }
 
-    // Client with signer for write operations (if private key provided)
-    if (process.env.SOLANA_PRIVATE_KEY) {
-      this.clientWithSigner = new PNPClient(rpcUrl, process.env.SOLANA_PRIVATE_KEY);
+  // Lazy initialization of signer client
+  private get clientWithSigner(): PNPClient | undefined {
+    if (!this._initialized) {
+      this._initialized = true;
+      const privateKey = process.env.SOLANA_PRIVATE_KEY;
+      if (privateKey) {
+        const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+        try {
+          this._clientWithSigner = new PNPClient(rpcUrl, privateKey);
+          console.log('[PNPService] Initialized client with signer');
+        } catch (error) {
+          console.error('[PNPService] Failed to initialize signer:', error);
+        }
+      } else {
+        console.warn('[PNPService] SOLANA_PRIVATE_KEY not set');
+      }
     }
+    return this._clientWithSigner;
   }
 
   async createPrivacyMarket(params: {
@@ -130,17 +151,34 @@ export class PNPService {
     side: 'yes' | 'no';
     amount: bigint;
   }) {
-    if (!this.clientWithSigner?.trading) {
-      throw new Error('Signer required for trading');
+    const client = this.clientWithSigner;
+
+    if (!client) {
+      throw new Error('Trading service not configured: SOLANA_PRIVATE_KEY not set');
+    }
+
+    if (!client.trading) {
+      console.error('[PNPService] PNPClient trading module not available');
+      throw new Error('Trading module not available on PNP client');
     }
 
     const market = new PublicKey(params.market);
+    const amountUsdc = Number(params.amount) / 1_000_000; // Convert to USDC units
 
-    return await this.clientWithSigner.trading.buyTokensUsdc({
-      market,
-      buyYesToken: params.side === 'yes',
-      amountUsdc: Number(params.amount) / 1_000_000, // Convert to USDC units
-    });
+    console.log(`[PNPService] Executing trade: market=${params.market}, side=${params.side}, amount=${amountUsdc} USDC`);
+
+    try {
+      const result = await client.trading.buyTokensUsdc({
+        market,
+        buyYesToken: params.side === 'yes',
+        amountUsdc,
+      });
+      console.log(`[PNPService] Trade executed:`, result);
+      return result;
+    } catch (error) {
+      console.error(`[PNPService] Trade failed:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -184,6 +222,91 @@ export class PNPService {
       console.error('Error fetching global config:', error);
       return null;
     }
+  }
+
+  /**
+   * Prepare a trade transaction for client-side signing.
+   * The transaction is built but NOT signed - the user signs it with their wallet.
+   */
+  async prepareTradeTransaction(params: {
+    market: string;
+    side: 'yes' | 'no';
+    amountUsdc: number;
+    walletAddress: string;
+  }): Promise<Transaction> {
+    const rpcUrl = process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com';
+    const connection = new Connection(rpcUrl, 'confirmed');
+    const userWallet = new PublicKey(params.walletAddress);
+    const marketPubkey = new PublicKey(params.market);
+
+    console.log(`[PNPService] Preparing transaction for ${params.walletAddress}`);
+
+    // Create a temporary client for the user's wallet to build the transaction
+    // The PNP SDK needs a keypair to build transactions, but we won't use it to sign
+    // Instead we create a dummy keypair and replace the fee payer
+    const tempClient = new PNPClient(rpcUrl);
+
+    // Fetch market info to get token mints
+    const marketInfo = await this.getMarketInfo(params.market);
+    if (!marketInfo) {
+      throw new Error('Market not found');
+    }
+
+    // Build the transaction using PNP SDK's transaction builder if available
+    // Otherwise, we need to construct the instructions manually
+    if ((tempClient.trading as any)?.buildBuyTransaction) {
+      const tx = await (tempClient.trading as any).buildBuyTransaction({
+        market: marketPubkey,
+        buyYesToken: params.side === 'yes',
+        amountUsdc: params.amountUsdc,
+        buyer: userWallet,
+      });
+      return tx;
+    }
+
+    // Fallback: Build transaction manually using market data
+    // This is a simplified version - the actual PNP SDK handles more complexity
+    const transaction = new Transaction();
+
+    // Get the recent blockhash
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.lastValidBlockHeight = lastValidBlockHeight;
+    transaction.feePayer = userWallet;
+
+    // The actual buy instruction would need to be constructed based on PNP program's IDL
+    // For now, we'll throw an error if the SDK doesn't support building transactions
+    console.log(`[PNPService] Market info:`, {
+      yesMint: marketInfo.account.yes_token_mint,
+      noMint: marketInfo.account.no_token_mint,
+      collateral: marketInfo.account.collateral_token,
+    });
+
+    // Check if user has USDC token account
+    const USDC_MINT = new PublicKey(marketInfo.account.collateral_token || 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr');
+    const userUsdcAta = await getAssociatedTokenAddress(USDC_MINT, userWallet);
+
+    try {
+      await getAccount(connection, userUsdcAta);
+    } catch {
+      // Create ATA instruction if it doesn't exist
+      transaction.add(
+        createAssociatedTokenAccountInstruction(
+          userWallet,
+          userUsdcAta,
+          userWallet,
+          USDC_MINT
+        )
+      );
+    }
+
+    // For the actual trade, we need the PNP SDK to expose transaction building
+    // This is a placeholder that shows the infrastructure is in place
+    throw new Error(
+      'PNP SDK does not expose transaction building. ' +
+      'Client-side signing requires SDK support for building unsigned transactions. ' +
+      'Please use the server-side execute endpoint or contact PNP for SDK updates.'
+    );
   }
 }
 
