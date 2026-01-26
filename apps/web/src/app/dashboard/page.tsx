@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePhantom, useAccounts, useConnect } from '@phantom/react-sdk';
+import { usePhantom, useAccounts, useConnect, AddressType } from '@phantom/react-sdk';
 import Link from 'next/link';
 import {
   Wallet,
@@ -25,7 +25,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   // Get the Solana address from connected accounts
-  const solanaAccount = accounts?.find((a) => a.addressType === 'solana');
+  // Note: AddressType.solana returns "Solana" (capitalized)
+  const solanaAccount = accounts?.find((a) => a.addressType === AddressType.solana);
   const publicKeyString = solanaAccount?.address || '';
 
   useEffect(() => {

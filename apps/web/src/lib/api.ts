@@ -349,3 +349,26 @@ export async function fetchMyPositions(walletAddress: string): Promise<Positions
   if (!json.success) throw new Error(json.error || 'Failed to fetch positions');
   return json.data!;
 }
+
+// Live Activity Feed API
+export interface ActivityItem {
+  id: string;
+  marketAddress: string;
+  side: 'yes' | 'no';
+  timestamp: number;
+  maskedWallet: string;
+  status: string;
+}
+
+export interface ActivityFeedResponse {
+  count: number;
+  activity: ActivityItem[];
+  note: string;
+}
+
+export async function fetchOrderbookActivity(limit: number = 50): Promise<ActivityFeedResponse> {
+  const res = await fetch(`${API_BASE}/api/orderbook/activity?limit=${limit}`);
+  const json: ApiResponse<ActivityFeedResponse> = await res.json();
+  if (!json.success) throw new Error(json.error || 'Failed to fetch activity');
+  return json.data!;
+}

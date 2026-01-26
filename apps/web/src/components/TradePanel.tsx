@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePhantom, useAccounts } from '@phantom/react-sdk';
+import { usePhantom, useAccounts, AddressType } from '@phantom/react-sdk';
 import { Lock, Eye, EyeOff, AlertCircle, CheckCircle, Shield, Send, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { encryptTrade, submitEncryptedPosition, MarketPrices, EncryptedTrade } from '@/lib/api';
@@ -32,7 +32,8 @@ export default function TradePanel({
   const [positionId, setPositionId] = useState<string | null>(null);
 
   // Get the Solana address from connected accounts
-  const solanaAccount = accounts?.find((a) => a.addressType === 'solana');
+  // Note: AddressType.solana returns "Solana" (capitalized)
+  const solanaAccount = accounts?.find((a) => a.addressType === AddressType.solana);
   const walletAddress = solanaAccount?.address || '';
 
   const handleEncrypt = async () => {

@@ -202,6 +202,35 @@ router.get('/verify/:commitmentHash', async (req, res) => {
 });
 
 /**
+ * Get recent activity feed (PUBLIC)
+ *
+ * GET /api/orderbook/activity
+ *
+ * Returns recent orders with masked addresses for live visualization.
+ * Privacy is preserved - no actual amounts or full addresses are revealed.
+ */
+router.get('/activity', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const activity = orderBook.getRecentActivity(Math.min(limit, 100));
+
+    res.json({
+      success: true,
+      data: {
+        count: activity.length,
+        activity,
+        note: 'Wallet addresses are masked. Amounts are encrypted and not shown.',
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: (error as Error).message,
+    });
+  }
+});
+
+/**
  * Get order book statistics (PUBLIC)
  *
  * GET /api/orderbook/stats

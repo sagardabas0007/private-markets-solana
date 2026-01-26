@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Zap, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { X, Zap, AlertCircle, CheckCircle, Loader2, Calendar, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { createMarket, CreateMarketResult } from '@/lib/api';
 
@@ -14,12 +14,55 @@ interface CreateMarketModalProps {
 export default function CreateMarketModal({ isOpen, onClose, onSuccess }: CreateMarketModalProps) {
   const [question, setQuestion] = useState('');
   const [initialLiquidity, setInitialLiquidity] = useState('1'); // In tokens (display)
-  const [endTimeHours, setEndTimeHours] = useState('24');
-  const [useCustomOracle, setUseCustomOracle] = useState(true);
+
+  // Date and time state for resolution
+  const [endDate, setEndDate] = useState(() => {
+    // Default to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  });
+  const [endTime, setEndTime] = useState('12:00');
+
+  // Default to PNP oracles (not custom oracle) for MVP
+  const [useCustomOracle] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<CreateMarketResult | null>(null);
 
+  // Calculate hours until end date/time - MUST be before any conditional returns
+  const endTimeHours = useMemo(() => {
+    const endDateTime = new Date(`${endDate}T${endTime}`);
+    const now = new Date();
+    const diffMs = endDateTime.getTime() - now.getTime();
+    const diffHours = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60)));
+    return diffHours;
+  }, [endDate, endTime]);
+
+  // Minimum date is today
+  const minDate = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // Maximum date is 1 year from now
+  const maxDate = useMemo(() => {
+    const max = new Date();
+    max.setFullYear(max.getFullYear() + 1);
+    return max.toISOString().split('T')[0];
+  }, []);
+
+  // Format display of end date/time
+  const endDateTimeDisplay = useMemo(() => {
+    const dt = new Date(`${endDate}T${endTime}`);
+    return dt.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  }, [endDate, endTime]);
+
+  // Early return AFTER all hooks are called
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,11 +71,19 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
     setError(null);
     setSuccess(null);
 
+    // Validate end time is in the future
+    const endDateTime = new Date(`${endDate}T${endTime}`);
+    if (endDateTime <= new Date()) {
+      setError('Resolution date must be in the future');
+      setLoading(false);
+      return;
+    }
+
     try {
       const result = await createMarket({
         question,
         initialLiquidity: parseFloat(initialLiquidity) * 1_000_000, // Convert to units
-        endTimeHours: parseInt(endTimeHours),
+        endTimeHours,
         useCustomOracle,
       });
       setSuccess(result);
@@ -47,8 +98,10 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
   const resetForm = () => {
     setQuestion('');
     setInitialLiquidity('1');
-    setEndTimeHours('24');
-    setUseCustomOracle(true);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setEndDate(tomorrow.toISOString().split('T')[0]);
+    setEndTime('12:00');
     setError(null);
     setSuccess(null);
   };
@@ -67,9 +120,9 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-white border-4 border-dark rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+      <div className="relative w-full max-w-lg mx-4 bg-white border-4 border-dark rounded-2xl shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b-2 border-dark bg-neon-purple/10">
+        <div className="flex items-center justify-between p-4 border-b-2 border-dark bg-neon-purple/10 sticky top-0 bg-white z-10">
           <div className="flex items-center gap-2">
             <Zap className="w-6 h-6 text-neon-purple" />
             <h2 className="font-black text-xl">Create Market</h2>
@@ -103,12 +156,12 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
                   <code className="bg-white px-1 rounded">{success.marketAddress.slice(0, 20)}...</code>
                 </p>
                 <p>
-                  <span className="font-bold">Ends:</span>{' '}
-                  {new Date(success.endTime).toLocaleDateString()}
+                  <span className="font-bold">Resolves:</span>{' '}
+                  {new Date(success.endTime).toLocaleString()}
                 </p>
                 <p>
-                  <span className="font-bold">Type:</span>{' '}
-                  {success.isCustomOracle ? 'Custom Oracle (Dark Alpha)' : 'PNP Standard'}
+                  <span className="font-bold">Oracle:</span>{' '}
+                  {success.isCustomOracle ? 'Dark Alpha (Custom)' : 'PNP Protocol'}
                 </p>
               </div>
             </div>
@@ -127,7 +180,7 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {/* Question */}
             <div>
-              <label className="block font-bold mb-2">Question</label>
+              <label className="block font-bold mb-2">Market Question</label>
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
@@ -144,67 +197,78 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
               <p className="text-sm text-dark/50 mt-1">Minimum 10 characters</p>
             </div>
 
-            {/* Liquidity & Duration Row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block font-bold mb-2">Initial Liquidity</label>
+            {/* Resolution Date & Time */}
+            <div>
+              <label className="block font-bold mb-2">
+                <Calendar className="w-4 h-4 inline mr-2" />
+                Resolution Date & Time
+              </label>
+              <div className="grid grid-cols-2 gap-3">
                 <div className="relative">
                   <input
-                    type="number"
-                    value={initialLiquidity}
-                    onChange={(e) => setInitialLiquidity(e.target.value)}
-                    min="1"
-                    step="0.1"
-                    className="w-full p-3 pr-16 border-2 border-dark rounded-xl
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={minDate}
+                    max={maxDate}
+                    className="w-full p-3 border-2 border-dark rounded-xl
                       shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]
                       focus:outline-none focus:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]
                       focus:translate-x-[2px] focus:translate-y-[2px]
-                      transition-all"
+                      transition-all bg-white"
                     required
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-dark/50">
-                    tokens
-                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type="time"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    className="w-full p-3 border-2 border-dark rounded-xl
+                      shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]
+                      focus:outline-none focus:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]
+                      focus:translate-x-[2px] focus:translate-y-[2px]
+                      transition-all bg-white"
+                    required
+                  />
                 </div>
               </div>
+              <p className="text-sm text-dark/50 mt-2 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Resolves: {endDateTimeDisplay} ({endTimeHours} hours from now)
+              </p>
+            </div>
 
-              <div>
-                <label className="block font-bold mb-2">Duration</label>
-                <select
-                  value={endTimeHours}
-                  onChange={(e) => setEndTimeHours(e.target.value)}
-                  className="w-full p-3 border-2 border-dark rounded-xl
+            {/* Initial Liquidity */}
+            <div>
+              <label className="block font-bold mb-2">Initial Liquidity</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={initialLiquidity}
+                  onChange={(e) => setInitialLiquidity(e.target.value)}
+                  min="1"
+                  step="0.1"
+                  className="w-full p-3 pr-16 border-2 border-dark rounded-xl
                     shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]
                     focus:outline-none focus:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]
                     focus:translate-x-[2px] focus:translate-y-[2px]
-                    transition-all bg-white"
-                >
-                  <option value="1">1 hour</option>
-                  <option value="6">6 hours</option>
-                  <option value="24">24 hours</option>
-                  <option value="72">3 days</option>
-                  <option value="168">1 week</option>
-                  <option value="720">30 days</option>
-                </select>
+                    transition-all"
+                  required
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-dark/50">
+                  tokens
+                </span>
               </div>
+              <p className="text-sm text-dark/50 mt-1">Minimum 1 token required</p>
             </div>
 
-            {/* Oracle Type */}
-            <div className="bg-neon-purple/10 border-2 border-neon-purple/30 rounded-xl p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={useCustomOracle}
-                  onChange={(e) => setUseCustomOracle(e.target.checked)}
-                  className="w-5 h-5 mt-0.5 rounded border-2 border-dark accent-neon-purple"
-                />
-                <div>
-                  <span className="font-bold">Use Dark Alpha Oracle</span>
-                  <p className="text-sm text-dark/60 mt-1">
-                    Enable custom settlement control. You&apos;ll be able to resolve the market when the outcome is known.
-                  </p>
-                </div>
-              </label>
+            {/* Oracle Type - Hidden for MVP, default to PNP */}
+            <div className="bg-gray-50 border border-dark/20 rounded-xl p-3">
+              <div className="flex items-center gap-2 text-sm text-dark/60">
+                <Zap className="w-4 h-4" />
+                <span>Using <strong>PNP Protocol</strong> oracle for market resolution</span>
+              </div>
             </div>
 
             {/* Error */}
@@ -220,7 +284,7 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
               type="submit"
               variant="hero"
               className="w-full"
-              disabled={loading || question.length < 10}
+              disabled={loading || question.length < 10 || endTimeHours < 1}
             >
               {loading ? (
                 <>

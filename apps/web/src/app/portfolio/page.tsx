@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { usePhantom, useAccounts } from '@phantom/react-sdk';
+import { usePhantom, useAccounts, AddressType } from '@phantom/react-sdk';
 import {
   Shield,
   Lock,
@@ -37,7 +37,8 @@ export default function PortfolioPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Get the Solana address from connected accounts
-  const solanaAccount = accounts?.find((a) => (a as { addressType?: string }).addressType === 'solana');
+  // Note: AddressType.solana returns "Solana" (capitalized)
+  const solanaAccount = accounts?.find((a) => a.addressType === AddressType.solana);
   const walletAddress = solanaAccount?.address || '';
 
   const loadPositions = useCallback(async () => {

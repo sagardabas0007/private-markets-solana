@@ -276,6 +276,34 @@ class EncryptedOrderBook {
   }
 
   /**
+   * Get recent activity feed (public, privacy-preserving)
+   *
+   * Returns recent orders with masked addresses and amounts
+   * for the live orderbook visualization.
+   */
+  getRecentActivity(limit: number = 50): Array<{
+    id: string;
+    marketAddress: string;
+    side: 'yes' | 'no';
+    timestamp: number;
+    maskedWallet: string; // "0x1234...5678" format
+    status: string;
+  }> {
+    const positions = Array.from(this.positions.values())
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, limit);
+
+    return positions.map(p => ({
+      id: p.id,
+      marketAddress: p.marketAddress,
+      side: p.sideHint || 'yes',
+      timestamp: p.timestamp,
+      maskedWallet: `${p.walletAddress.slice(0, 4)}...${p.walletAddress.slice(-4)}`,
+      status: p.status,
+    }));
+  }
+
+  /**
    * Get all market aggregates (public)
    */
   getAllAggregates(): MarketAggregate[] {
