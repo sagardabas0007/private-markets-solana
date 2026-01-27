@@ -6,7 +6,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // DAC SPL token mint address (Dark Alpha Confidential)
 // Standard SPL token compatible with PNP markets
-export const DAC_MINT = 'JBxiN5BBM8ottNaUUpWw6EFtpMRd6iTnmLYrhZB5ArMo';
+export const DAC_MINT = 'H8dsWNbpfeZMAAxQdQuW2E5BWYQnjk27gfe9dDdwGYiv';
 
 export interface Market {
   publicKey: string;
