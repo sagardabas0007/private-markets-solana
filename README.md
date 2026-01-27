@@ -62,26 +62,40 @@ Dark-Alpha-Solana/
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm
+- Node.js 20+
+- npm
 - Solana CLI (for scripts)
 - Phantom wallet browser extension
 
 ### Setup
 
 ```bash
-# Install dependencies
-pnpm install
+# Install dependencies for both apps
+make install
 
 # Copy environment file
 cp apps/api/.env.example apps/api/.env
 # Edit .env with your keys
 
-# Start the API server
-cd apps/api && pnpm dev
+# Run both apps together
+make dev-all
 
-# In another terminal, start the web app
-cd apps/web && pnpm dev
+# Or run them separately in different terminals:
+make dev-api   # API on http://localhost:3001
+make dev-web   # Web on http://localhost:3000
+```
+
+### Available Commands
+
+```bash
+make install      # Install dependencies for both apps
+make install-api  # Install API dependencies only
+make install-web  # Install Web dependencies only
+make dev-all      # Run both API and Web together
+make dev-api      # Run API in development mode
+make dev-web      # Run Web in development mode
+make build        # Build both apps
+make clean        # Remove node_modules and build artifacts
 ```
 
 The web app runs at http://localhost:3000
@@ -143,16 +157,12 @@ Users sign their own transactions. The server never holds user private keys.
 
 ## Deployment
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for instructions on deploying to Vercel.
+Both apps are independent and can be deployed separately to Vercel via the dashboard.
 
-Quick deploy commands:
-```bash
-# Deploy API
-cd apps/api && vercel --prod
+**API:** Import repo → Root Directory: `apps/api` → Framework: Other
+**Web:** Import repo → Root Directory: `apps/web` → Framework: Next.js
 
-# Deploy Web
-cd apps/web && vercel --prod
-```
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions.
 
 ## Architecture
 
