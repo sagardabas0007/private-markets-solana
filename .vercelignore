@@ -1,9 +1,0 @@
-# Minimal ignore - only large/problematic directories
-test-ledger
-target
-.git
-programs
-reference-repos
-reference-docs
-.claude
-*.log

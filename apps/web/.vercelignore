@@ -1,4 +1,0 @@
-# Only ignore build artifacts and node_modules
-node_modules
-.next
-.git
