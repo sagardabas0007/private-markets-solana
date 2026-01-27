@@ -49,3 +49,6 @@ CLAUDE.md
 reference-repos/
 reference-docs/
 .vercel
+.playwright-mcp/
+DEPLOYMENT.md
+SUMMARY.md

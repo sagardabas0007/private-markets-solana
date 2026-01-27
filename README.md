@@ -98,14 +98,14 @@ make build        # Build both apps
 make clean        # Remove node_modules and build artifacts
 ```
 
-The web app runs at http://localhost:3000
-The API runs at http://localhost:3001
+The web app runs at <http://localhost:3000>
+The API runs at <http://localhost:3001>
 
 ### Environment Variables
 
 The API needs these in `apps/api/.env`:
 
-```
+```bash
 SOLANA_RPC_URL=https://api.devnet.solana.com
 SOLANA_PRIVATE_KEY=<your-base58-private-key>
 GOOGLE_API_KEY=<for-ai-agent-features>
@@ -114,44 +114,53 @@ GOOGLE_API_KEY=<for-ai-agent-features>
 ## Features
 
 ### Dark Markets
+
 Markets that use DAC tokens as collateral. Your bet sizes are encrypted. Other traders see that positions exist but cannot see the amounts.
 
 ### AI Agent
+
 Scans news and creates prediction markets automatically. Uses Google Gemini for analysis.
 
 ### Privacy-Preserving Order Book
+
 Shows aggregate market activity without revealing individual positions. Position sizes are encrypted client-side before submission.
 
 ### Client-Side Signing
+
 Users sign their own transactions. The server never holds user private keys.
 
 ## API Endpoints
 
 ### Markets
+
 - `GET /api/markets` - List all markets
 - `GET /api/markets/:id` - Get specific market
 - `POST /api/markets/create` - Create new market
 - `GET /api/markets/tracked` - Get markets created through Dark Alpha
 
 ### Dark Markets
+
 - `GET /api/dark-markets` - List all Dark Markets (DAC collateral)
 - `GET /api/dark-markets/:address` - Get specific Dark Market
 - `POST /api/dark-markets/prepare-bet` - Prepare encrypted bet transaction
 - `GET /api/dark-markets/balance/:wallet` - Get user's encrypted balance
 
 ### Trading
+
 - `POST /api/trading/prepare` - Prepare unsigned transaction
 - `POST /api/trading/submit` - Submit signed transaction
 - `POST /api/trading/execute` - Execute trade (server-signed, deprecated)
 - `GET /api/trading/market/:id/info` - Get market prices and liquidity
 
 ### Order Book
+
 - `POST /api/orderbook/submit` - Submit encrypted position
 - `GET /api/orderbook/market/:id/aggregate` - Get market aggregate
 - `GET /api/orderbook/stats` - Get global stats
 - `GET /api/orderbook/activity` - Get recent activity feed
 
 ### Agent
+
 - `GET /api/agent/status` - Get AI agent status
 - `POST /api/agent/scan` - Trigger news scan
 
@@ -171,6 +180,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for technical details.
 ## Documentation
 
 Visit `/docs` on the web app for comprehensive documentation including:
+
 - Getting Started guide
 - How the privacy layer works
 - System architecture
