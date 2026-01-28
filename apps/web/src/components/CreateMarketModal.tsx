@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { X, Zap, AlertCircle, CheckCircle, Loader2, Calendar, Clock } from 'lucide-react';
+import { X, Zap, AlertCircle, CheckCircle, Loader2, Calendar, Clock, Shield, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { createMarket, CreateMarketResult } from '@/lib/api';
+import { createMarket, CreateMarketResult, USDC_MINT, DAC_MINT } from '@/lib/api';
 
 interface CreateMarketModalProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ interface CreateMarketModalProps {
 export default function CreateMarketModal({ isOpen, onClose, onSuccess }: CreateMarketModalProps) {
   const [question, setQuestion] = useState('');
   const [initialLiquidity, setInitialLiquidity] = useState('1'); // In tokens (display)
+  const [collateralType, setCollateralType] = useState<'usdc' | 'dac'>('usdc');
 
   // Date and time state for resolution
   const [endDate, setEndDate] = useState(() => {
@@ -85,6 +86,7 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
         initialLiquidity: parseFloat(initialLiquidity) * 1_000_000, // Convert to units
         endTimeHours,
         useCustomOracle,
+        collateralMint: collateralType === 'dac' ? DAC_MINT : USDC_MINT,
       });
       setSuccess(result);
       onSuccess(result);
@@ -98,6 +100,7 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
   const resetForm = () => {
     setQuestion('');
     setInitialLiquidity('1');
+    setCollateralType('usdc');
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setEndDate(tomorrow.toISOString().split('T')[0]);
@@ -239,9 +242,56 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
               </p>
             </div>
 
+            {/* Collateral Type Selection */}
+            <div>
+              <label className="block font-bold mb-2">Collateral Type</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCollateralType('usdc')}
+                  className={`p-4 rounded-xl border-2 border-dark transition-all text-left
+                    ${collateralType === 'usdc'
+                      ? 'bg-neon-green shadow-none translate-x-[2px] translate-y-[2px]'
+                      : 'bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <DollarSign className="w-5 h-5" />
+                    <span className="font-bold">USDC</span>
+                  </div>
+                  <p className="text-xs text-dark/60">Standard markets</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCollateralType('dac')}
+                  className={`p-4 rounded-xl border-2 border-dark transition-all text-left
+                    ${collateralType === 'dac'
+                      ? 'bg-neon-purple text-white shadow-none translate-x-[2px] translate-y-[2px]'
+                      : 'bg-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px]'
+                    }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Shield className="w-5 h-5" />
+                    <span className="font-bold">DAC</span>
+                  </div>
+                  <p className={`text-xs ${collateralType === 'dac' ? 'text-white/80' : 'text-dark/60'}`}>
+                    Private markets
+                  </p>
+                </button>
+              </div>
+              {collateralType === 'dac' && (
+                <p className="text-sm text-neon-purple mt-2 flex items-center gap-1">
+                  <Shield className="w-3 h-3" />
+                  DAC markets use encrypted positions for privacy
+                </p>
+              )}
+            </div>
+
             {/* Initial Liquidity */}
             <div>
-              <label className="block font-bold mb-2">Initial Liquidity (USDC)</label>
+              <label className="block font-bold mb-2">
+                Initial Liquidity ({collateralType === 'dac' ? 'DAC' : 'USDC'})
+              </label>
               <div className="relative">
                 <input
                   type="number"
@@ -257,11 +307,13 @@ export default function CreateMarketModal({ isOpen, onClose, onSuccess }: Create
                   required
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-dark/50">
-                  USDC
+                  {collateralType === 'dac' ? 'DAC' : 'USDC'}
                 </span>
               </div>
               <p className="text-sm text-dark/50 mt-1">
-                Uses Devnet USDC (Gh9Zw...GtKJr). Minimum 1 USDC required.
+                {collateralType === 'dac'
+                  ? 'Uses DAC tokens. Wrap USDC to DAC first via /wrap page.'
+                  : 'Uses Devnet USDC (Gh9Zw...GtKJr). Minimum 1 USDC required.'}
               </p>
             </div>
 

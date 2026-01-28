@@ -49,15 +49,24 @@ Dark-Alpha-Solana/
 | USDC Vault | `AWsahjbDPapSiEnRzingKfTmwLLHgmvj7wpwsgsdGCvh` |
 | USDC (Devnet) | `Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr` |
 
-### Dark Markets (Live on Devnet)
+### Dark Markets V3 (Live on Devnet - Trading Enabled)
+
+These are the current tradeable Dark Markets using PNP V3 format with proper token initialization:
+
+| Market | Question | YES Mint | NO Mint |
+|--------|----------|----------|---------|
+| `6SSj451YJjniHr79baxSdZ2vJxgJZAdj4B6EEqCFXyq7` | Will Bitcoin reach $150,000 by end of Q2 2025? | `HUXdQ3pb...` | `2UKELvG2...` |
+| `bkSZH6kY2bdCbRfry6QRvqnD3dehrEMYqj4xz63Kp46` | Will Ethereum flip Bitcoin in market cap by 2026? | `5N3jcPWw...` | `EvaGQRqZ...` |
+| `DugnJKvPQGYzyCut5PPsZNDNLYXrf6SdUDmdfCZ5gcsH` | Will Solana process over 100,000 TPS by mid-2025? | `Fc5sbkbV...` | `91D53xWa...` |
+
+### Legacy Dark Markets V2 (Read-Only)
+
+These markets use DAC as collateral but have uninitialized token mints (trading not supported):
 
 | Market | Question |
 |--------|----------|
 | `Bs5fuKjufB7eervAud6E8aRe82CUie7t3tKaA9NiT1Vo` | Will Bitcoin reach $150,000 by end of Q2 2025? |
 | `6T3pHe6huaqjegEVRFSmcaBwZic1JyJUsy8vDc8P3XBr` | Will Ethereum flip Bitcoin in market cap by 2026? |
-| `74bB7uUGYXi4eMDrmwcyWY8NTM4iSqkGcWxVf3FtGeu6` | Will Solana process over 100,000 TPS in production by mid-2025? |
-| `96ZKsnobF4K8otLPo9LYkR1z6q1WFqjXUJj6ESwaEn1Z` | Will the Federal Reserve cut rates by more than 100bps in 2025? |
-| `H2idEMXuguKAvokMqvYRWY7YmPDjuLLxVB1nbjAEMQ5S` | Will a major tech company announce Bitcoin holdings in Q1 2025? |
 
 ## Running Locally
 

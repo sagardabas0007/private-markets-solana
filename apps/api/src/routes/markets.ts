@@ -5,6 +5,7 @@ import bs58 from 'bs58';
 import { z } from 'zod';
 import { pnpService } from '../services/pnp';
 import { marketTracker } from '../services/marketTracker';
+import { V3_DARK_MARKETS, V3_USDC_MARKETS, ALL_V3_MARKETS, DAC_MINT, USDC_MINT, isDarkMarket } from '../services/darkMarkets';
 
 const router = Router();
 
@@ -65,12 +66,23 @@ router.get('/:marketId', async (req, res) => {
   try {
     const { marketId } = req.params;
 
+    // Check if it's a known V3 market (either DAC or USDC)
+    const v3Market = ALL_V3_MARKETS.find(m => m.address === marketId);
+    const isV3 = !!v3Market || await pnpService.isV3Market(marketId);
+
     // Check if it's a tracked market first
     const tracked = marketTracker.getMarket(marketId);
     if (tracked) {
+      const normalizedMarket = marketTracker.toNormalizedMarket(tracked);
+      const dark = isDarkMarket(normalizedMarket.account.collateral_token);
       res.json({
         success: true,
-        data: marketTracker.toNormalizedMarket(tracked),
+        data: {
+          ...normalizedMarket,
+          isDarkMarket: dark,
+          isV3,
+          tradingEnabled: isV3, // Only V3 markets support trading
+        },
         isTracked: true,
       });
       return;
@@ -79,9 +91,60 @@ router.get('/:marketId', async (req, res) => {
     // Otherwise fetch from PNP
     const market = await pnpService.getMarketInfo(marketId);
 
+    if (!market) {
+      // Check if it's a known V3 market that's not in PNP's list
+      if (v3Market) {
+        // Determine if it's a DAC market or USDC market
+        const isDAC = V3_DARK_MARKETS.some(m => m.address === marketId);
+        const collateralMint = isDAC ? DAC_MINT.toBase58() : USDC_MINT.toBase58();
+
+        res.json({
+          success: true,
+          data: {
+            publicKey: v3Market.address,
+            account: {
+              id: '',
+              question: v3Market.question,
+              resolved: false,
+              resolvable: true,
+              creator: '',
+              end_time: '0',
+              creation_time: '0',
+              initial_liquidity: '0',
+              yes_token_mint: v3Market.yesMint,
+              no_token_mint: v3Market.noMint,
+              yes_token_supply_minted: '0',
+              no_token_supply_minted: '0',
+              collateral_token: collateralMint,
+              market_reserves: '0',
+              winning_token_id: { None: {} },
+            },
+            isDarkMarket: isDAC,
+            isV3: true,
+            tradingEnabled: true,
+          },
+          isTracked: false,
+        });
+        return;
+      }
+
+      res.status(404).json({
+        success: false,
+        error: 'Market not found',
+      });
+      return;
+    }
+
+    const dark = isDarkMarket(market.account.collateral_token);
+
     res.json({
       success: true,
-      data: market,
+      data: {
+        ...market,
+        isDarkMarket: dark,
+        isV3,
+        tradingEnabled: isV3, // Only V3 markets support trading
+      },
       isTracked: false,
     });
   } catch (error) {

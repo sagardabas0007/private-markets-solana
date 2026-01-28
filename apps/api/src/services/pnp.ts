@@ -2,10 +2,15 @@ import { PNPClient } from 'pnp-sdk';
 import { PublicKey, Transaction, Connection, Keypair, SystemProgram } from '@solana/web3.js';
 import {
   TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   getAssociatedTokenAddress,
+  getAssociatedTokenAddressSync,
   createAssociatedTokenAccountInstruction,
-  getAccount
+  getAccount,
+  getMint
 } from '@solana/spl-token';
+import BN from 'bn.js';
+import { ALL_V3_MARKETS } from './darkMarkets';
 
 // PNP market response types
 interface PNPMarketAccount {
@@ -178,6 +183,115 @@ export class PNPService {
     } catch (error) {
       console.error(`[PNPService] Trade failed:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Execute a trade on a V3 market using the anchorClient directly.
+   * V3 markets have properly initialized YES/NO token mints.
+   */
+  async executeV3Trade(params: {
+    market: string;
+    side: 'yes' | 'no';
+    amount: bigint;
+  }) {
+    const client = this.clientWithSigner;
+
+    if (!client) {
+      throw new Error('Trading service not configured: SOLANA_PRIVATE_KEY not set');
+    }
+
+    if (!client.anchorClient) {
+      throw new Error('Anchor client not available');
+    }
+
+    const market = new PublicKey(params.market);
+    const program = client.anchorClient.program;
+    const buyer = (client as any).signer?.publicKey;
+
+    if (!buyer) {
+      throw new Error('Signer not available');
+    }
+
+    console.log(`[PNPService] Executing V3 trade: market=${params.market}, side=${params.side}, amount=${params.amount}`);
+
+    try {
+      // Fetch market data
+      const marketAccount = await program.account.marketV3.fetch(market);
+      const yesTokenMint = new PublicKey(marketAccount.yesTokenMint);
+      const noTokenMint = new PublicKey(marketAccount.noTokenMint);
+      const collateralTokenMint = new PublicKey(marketAccount.collateralToken);
+
+      // Get global config PDA
+      const [globalConfig] = PublicKey.findProgramAddressSync(
+        [Buffer.from('global_config')],
+        program.programId
+      );
+
+      // Derive ATAs
+      const buyerYesTokenAccount = getAssociatedTokenAddressSync(yesTokenMint, buyer, false);
+      const buyerNoTokenAccount = getAssociatedTokenAddressSync(noTokenMint, buyer, false);
+      const buyerCollateralTokenAccount = getAssociatedTokenAddressSync(collateralTokenMint, buyer, false);
+      const marketReserveVault = getAssociatedTokenAddressSync(collateralTokenMint, market, true);
+
+      const amount = new BN(params.amount.toString());
+      const minimumOut = new BN(0);
+      const sideArg = params.side === 'yes' ? { yes: {} } : { no: {} };
+
+      const result = await program.methods.buyV3Tokens(
+        amount,
+        sideArg,
+        minimumOut
+      ).accounts({
+        buyer,
+        market,
+        globalConfig,
+        yesTokenMint,
+        noTokenMint,
+        collateralTokenMint,
+        buyerYesTokenAccount,
+        buyerNoTokenAccount,
+        buyerCollateralTokenAccount,
+        marketReserveVault,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId
+      }).rpc();
+
+      console.log(`[PNPService] V3 Trade executed:`, result);
+      return { signature: result };
+    } catch (error) {
+      console.error(`[PNPService] V3 Trade failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a market is V3 (has proper YES/NO mints)
+   * First checks against known V3 markets list, then falls back to dynamic check
+   */
+  async isV3Market(marketAddress: string): Promise<boolean> {
+    // First check against known V3 markets (reliable source of truth)
+    const knownV3 = ALL_V3_MARKETS.find(m => m.address === marketAddress);
+    if (knownV3) {
+      console.log(`[PNPService] Market ${marketAddress} is known V3 market`);
+      return true;
+    }
+
+    // Fallback to dynamic check for markets not in our list
+    try {
+      const client = this.clientWithSigner || new PNPClient(
+        process.env.SOLANA_RPC_URL || 'https://api.devnet.solana.com'
+      );
+
+      if (!client.anchorClient) return false;
+
+      const market = new PublicKey(marketAddress);
+      await client.anchorClient.program.account.marketV3.fetch(market);
+      console.log(`[PNPService] Market ${marketAddress} verified as V3 via on-chain fetch`);
+      return true;
+    } catch {
+      return false;
     }
   }
 

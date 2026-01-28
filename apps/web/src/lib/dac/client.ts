@@ -1,5 +1,11 @@
 import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from '@solana/spl-token';
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountInstruction,
+  getAccount
+} from '@solana/spl-token';
 
 // DAC Token Program ID (deployed on devnet)
 export const DAC_TOKEN_PROGRAM_ID = new PublicKey('ByaYNFzb2fPCkWLJCMEY4tdrfNqEAKAPJB3kDX86W5Rq');
@@ -274,34 +280,72 @@ export class DacTokenClient {
     const [vault] = findVaultPda(dacMint);
     const [dacAccount] = findDacAccountPda(dacMint, owner);
 
-    // Get user's USDC token account
-    const userUsdcAta = await getAssociatedTokenAddress(USDC_DEVNET_MINT, owner);
+    // Get user's USDC token account (use sync version with allowOwnerOffCurve for safety)
+    const userUsdcAta = getAssociatedTokenAddressSync(
+      USDC_DEVNET_MINT,
+      owner,
+      true, // allowOwnerOffCurve
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
 
     // Convert amount to base units (6 decimals)
     const amountBaseUnits = BigInt(Math.floor(amountUsdc * 1_000_000));
 
     // Build the deposit instruction
-    // Discriminator for deposit: first 8 bytes of sha256("global:deposit")
+    // Discriminator from IDL: [242, 35, 198, 137, 82, 225, 242, 182]
     const discriminator = Buffer.from([242, 35, 198, 137, 82, 225, 242, 182]);
 
     // Amount as u64 LE
     const amountBuffer = Buffer.alloc(8);
     amountBuffer.writeBigUInt64LE(amountBaseUnits);
 
-    const data = Buffer.concat([discriminator, amountBuffer]);
+    // Encrypted amount - for now we use a placeholder (16 bytes of zeros)
+    // In production, this would be encrypted via Inco SDK
+    // The program may accept empty/zero encrypted amount for simple deposits
+    const encryptedAmountBuffer = Buffer.alloc(16, 0);
+
+    // Build instruction data: discriminator + usdc_amount (u64) + encrypted_amount (bytes)
+    // Bytes are serialized as: 4-byte length prefix + data
+    const encryptedLengthBuffer = Buffer.alloc(4);
+    encryptedLengthBuffer.writeUInt32LE(encryptedAmountBuffer.length);
+
+    const data = Buffer.concat([
+      discriminator,
+      amountBuffer,
+      encryptedLengthBuffer,
+      encryptedAmountBuffer
+    ]);
 
     const transaction = new Transaction();
+
+    // Check if user's USDC ATA exists, if not create it
+    try {
+      await getAccount(this.connection, userUsdcAta);
+    } catch {
+      // USDC ATA doesn't exist, add instruction to create it
+      transaction.add(
+        createAssociatedTokenAccountInstruction(
+          owner,          // payer
+          userUsdcAta,    // ata
+          owner,          // owner
+          USDC_DEVNET_MINT // mint
+        )
+      );
+    }
 
     // Check if DAC account exists, if not add initialize instruction
     const existingAccount = await this.getUserAccount(owner);
     if (!existingAccount) {
       // Add initialize_account instruction first
-      const initDiscriminator = Buffer.from([108, 227, 130, 130, 252, 109, 75, 218]);
+      // Discriminator from IDL: [74, 115, 99, 93, 197, 69, 103, 7]
+      const initDiscriminator = Buffer.from([74, 115, 99, 93, 197, 69, 103, 7]);
       const initInstruction = {
         keys: [
           { pubkey: dacAccount, isSigner: false, isWritable: true },
           { pubkey: dacMint, isSigner: false, isWritable: false },
-          { pubkey: owner, isSigner: true, isWritable: true },
+          { pubkey: owner, isSigner: false, isWritable: false },
+          { pubkey: owner, isSigner: true, isWritable: true }, // payer
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
           { pubkey: INCO_LIGHTNING_PROGRAM_ID, isSigner: false, isWritable: false },
         ],
@@ -312,14 +356,16 @@ export class DacTokenClient {
     }
 
     // Add the deposit instruction
+    // Account order from IDL: dac_mint, dac_account, user_usdc, vault_usdc, user, token_program, system_program, inco_lightning_program
     const depositInstruction = {
       keys: [
         { pubkey: dacMint, isSigner: false, isWritable: true },
         { pubkey: dacAccount, isSigner: false, isWritable: true },
-        { pubkey: vault, isSigner: false, isWritable: true },
         { pubkey: userUsdcAta, isSigner: false, isWritable: true },
-        { pubkey: owner, isSigner: true, isWritable: false },
+        { pubkey: vault, isSigner: false, isWritable: true },
+        { pubkey: owner, isSigner: true, isWritable: true },
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
         { pubkey: INCO_LIGHTNING_PROGRAM_ID, isSigner: false, isWritable: false },
       ],
       programId: DAC_TOKEN_PROGRAM_ID,
@@ -341,6 +387,10 @@ export class DacTokenClient {
    * Build a withdraw transaction (DAC -> USDC)
    * The user redeems encrypted DAC tokens for USDC
    * Requires a decryption proof from the Inco co-validator
+   *
+   * Note: This is a simplified version. Full withdraw requires:
+   * - balance_handle: bytes (the encrypted balance handle to verify)
+   * - plaintext_amount: bytes (the decrypted amount with Inco proof)
    */
   async buildWithdrawTransaction(
     owner: PublicKey,
@@ -351,29 +401,63 @@ export class DacTokenClient {
     const [vault] = findVaultPda(dacMint);
     const [dacAccount] = findDacAccountPda(dacMint, owner);
 
+    // Sysvar for instructions
+    const SYSVAR_INSTRUCTIONS = new PublicKey('Sysvar1nstructions1111111111111111111111111');
+
     // Get user's USDC token account
-    const userUsdcAta = await getAssociatedTokenAddress(USDC_DEVNET_MINT, owner);
+    const userUsdcAta = getAssociatedTokenAddressSync(
+      USDC_DEVNET_MINT,
+      owner,
+      true,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID
+    );
 
     // Convert amount to base units (6 decimals)
     const amountBaseUnits = BigInt(Math.floor(amountUsdc * 1_000_000));
 
     // Build the withdraw instruction
-    // Discriminator for withdraw: first 8 bytes of sha256("global:withdraw")
+    // Discriminator from IDL: [183, 18, 70, 156, 148, 109, 161, 34]
     const discriminator = Buffer.from([183, 18, 70, 156, 148, 109, 161, 34]);
 
-    // Amount as u64 LE
-    const amountBuffer = Buffer.alloc(8);
-    amountBuffer.writeBigUInt64LE(amountBaseUnits);
+    // Get the user's balance handle (for the proof)
+    const userDacAccount = await this.getUserAccount(owner);
+    const balanceHandle = userDacAccount?.balanceHandle || BigInt(0);
 
-    const data = Buffer.concat([discriminator, amountBuffer]);
+    // Build balance_handle as bytes (16 bytes for u128)
+    const balanceHandleBuffer = Buffer.alloc(16);
+    balanceHandleBuffer.writeBigUInt64LE(balanceHandle & BigInt('0xFFFFFFFFFFFFFFFF'), 0);
+    balanceHandleBuffer.writeBigUInt64LE(balanceHandle >> BigInt(64), 8);
 
+    // Build plaintext_amount as bytes (8 bytes for u64)
+    const plaintextAmountBuffer = Buffer.alloc(8);
+    plaintextAmountBuffer.writeBigUInt64LE(amountBaseUnits);
+
+    // Serialize as: discriminator + balance_handle (bytes) + plaintext_amount (bytes)
+    const balanceHandleLengthBuffer = Buffer.alloc(4);
+    balanceHandleLengthBuffer.writeUInt32LE(balanceHandleBuffer.length);
+
+    const plaintextLengthBuffer = Buffer.alloc(4);
+    plaintextLengthBuffer.writeUInt32LE(plaintextAmountBuffer.length);
+
+    const data = Buffer.concat([
+      discriminator,
+      balanceHandleLengthBuffer,
+      balanceHandleBuffer,
+      plaintextLengthBuffer,
+      plaintextAmountBuffer
+    ]);
+
+    // Account order from IDL: dac_mint, dac_account, user_usdc, vault_usdc, vault_authority, user, sysvar_instructions, token_program, inco_lightning_program
     const withdrawInstruction = {
       keys: [
         { pubkey: dacMint, isSigner: false, isWritable: true },
         { pubkey: dacAccount, isSigner: false, isWritable: true },
-        { pubkey: vault, isSigner: false, isWritable: true },
         { pubkey: userUsdcAta, isSigner: false, isWritable: true },
-        { pubkey: owner, isSigner: true, isWritable: false },
+        { pubkey: vault, isSigner: false, isWritable: true },
+        { pubkey: vault, isSigner: false, isWritable: false }, // vault_authority (same PDA)
+        { pubkey: owner, isSigner: true, isWritable: true },
+        { pubkey: SYSVAR_INSTRUCTIONS, isSigner: false, isWritable: false },
         { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
         { pubkey: INCO_LIGHTNING_PROGRAM_ID, isSigner: false, isWritable: false },
       ],
@@ -382,6 +466,21 @@ export class DacTokenClient {
     };
 
     const transaction = new Transaction();
+
+    // Check if user's USDC ATA exists, create if needed
+    try {
+      await getAccount(this.connection, userUsdcAta);
+    } catch {
+      transaction.add(
+        createAssociatedTokenAccountInstruction(
+          owner,
+          userUsdcAta,
+          owner,
+          USDC_DEVNET_MINT
+        )
+      );
+    }
+
     transaction.add(withdrawInstruction);
 
     // Set transaction properties

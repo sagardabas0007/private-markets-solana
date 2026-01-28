@@ -6,9 +6,16 @@
 // This avoids CORS issues in production
 const API_BASE = '';
 
+// Token mint addresses (Devnet)
+// USDC Devnet - standard collateral for regular markets
+export const USDC_MINT = 'Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr';
+
 // DAC SPL token mint address (Dark Alpha Confidential)
-// Standard SPL token compatible with PNP markets
-export const DAC_MINT = 'H8dsWNbpfeZMAAxQdQuW2E5BWYQnjk27gfe9dDdwGYiv';
+// Privacy-preserving collateral for Dark Markets
+export const DAC_MINT = 'JBxiN5BBM8ottNaUUpWw6EFtpMRd6iTnmLYrhZB5ArMo';
+
+// DAC Token Program ID
+export const DAC_PROGRAM_ID = 'ByaYNFzb2fPCkWLJCMEY4tdrfNqEAKAPJB3kDX86W5Rq';
 
 export interface Market {
   publicKey: string;
@@ -30,6 +37,8 @@ export interface Market {
     winning_token_id: { None: Record<string, never> } | { Some: string };
   };
   isDarkMarket?: boolean;
+  isV3?: boolean;           // V3 markets have proper token mints initialized
+  tradingEnabled?: boolean; // True for V3 markets, false for V2 (broken mints)
   privacyNote?: string;
 }
 

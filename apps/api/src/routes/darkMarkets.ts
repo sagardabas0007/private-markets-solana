@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { PublicKey } from '@solana/web3.js';
 import { z } from 'zod';
-import { darkMarketsService, DAC_MINT, isDarkMarket } from '../services/darkMarkets';
+import { darkMarketsService, DAC_MINT, isDarkMarket, V3_DARK_MARKETS } from '../services/darkMarkets';
 import { pnpService } from '../services/pnp';
 
 const router = Router();
@@ -38,6 +38,55 @@ router.get('/', async (req, res) => {
 router.get('/:marketAddress', async (req, res) => {
   try {
     const { marketAddress } = req.params;
+
+    // Check if it's a known V3 Dark Market
+    const v3Market = V3_DARK_MARKETS.find(m => m.address === marketAddress);
+    const isV3 = !!v3Market || await pnpService.isV3Market(marketAddress);
+
+    // If it's a V3 market not in PNP's list, return its data directly
+    if (v3Market && !await pnpService.getMarketInfo(marketAddress)) {
+      res.json({
+        success: true,
+        data: {
+          market: {
+            publicKey: v3Market.address,
+            account: {
+              id: '',
+              question: v3Market.question,
+              resolved: false,
+              resolvable: true,
+              creator: '',
+              end_time: '0',
+              creation_time: '0',
+              initial_liquidity: '0',
+              yes_token_mint: v3Market.yesMint,
+              no_token_mint: v3Market.noMint,
+              yes_token_supply_minted: '0',
+              no_token_supply_minted: '0',
+              collateral_token: DAC_MINT.toBase58(),
+              market_reserves: '0',
+              winning_token_id: { None: {} },
+            },
+          },
+          isDarkMarket: true,
+          isV3: true,
+          tradingEnabled: true,
+          prices: { yes: 0.5, no: 0.5 },
+          liquidity: {
+            yesSupply: '0',
+            noSupply: '0',
+            totalSupply: '0',
+          },
+          privacyInfo: {
+            note: 'V3 Dark Market - trading enabled with encrypted bets',
+            collateral: 'DAC (Dark Alpha Confidential)',
+            encryption: 'Inco FHE (Fully Homomorphic Encryption)',
+          },
+        },
+      });
+      return;
+    }
+
     const market = await pnpService.getMarketInfo(marketAddress);
 
     if (!market) {
@@ -71,8 +120,14 @@ router.get('/:marketAddress', async (req, res) => {
     res.json({
       success: true,
       data: {
-        market,
+        market: {
+          ...market,
+          isV3,
+          tradingEnabled: isV3,
+        },
         isDarkMarket: true,
+        isV3,
+        tradingEnabled: isV3, // Only V3 markets support trading
         prices,
         liquidity: {
           yesSupply: yesSupply.toString(),
@@ -80,7 +135,9 @@ router.get('/:marketAddress', async (req, res) => {
           totalSupply: total.toString(),
         },
         privacyInfo: {
-          note: 'All bets on this market are encrypted',
+          note: isV3
+            ? 'V3 Dark Market - trading enabled with encrypted bets'
+            : 'V2 Dark Market - view only (trading disabled due to uninitialized token mints)',
           collateral: 'DAC (Dark Alpha Confidential)',
           encryption: 'Inco FHE (Fully Homomorphic Encryption)',
         },

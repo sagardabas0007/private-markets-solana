@@ -53,11 +53,26 @@ router.post('/execute', async (req, res) => {
 
     console.log(`[Trading] Executing trade: market=${market}, side=${side}, amount=${amount}`);
 
-    const result = await pnpService.executeTrade({
-      market,
-      side,
-      amount: BigInt(amount)
-    });
+    // Check if this is a V3 market (has proper token mints)
+    const isV3 = await pnpService.isV3Market(market);
+    console.log(`[Trading] Market is V3: ${isV3}`);
+
+    let result;
+    if (isV3) {
+      // Use V3 trading method for V3 markets
+      result = await pnpService.executeV3Trade({
+        market,
+        side,
+        amount: BigInt(amount)
+      });
+    } else {
+      // Use legacy method for V2 markets (may fail if mints aren't initialized)
+      result = await pnpService.executeTrade({
+        market,
+        side,
+        amount: BigInt(amount)
+      });
+    }
 
     console.log(`[Trading] Trade executed successfully:`, result);
 
@@ -68,6 +83,7 @@ router.post('/execute', async (req, res) => {
         market,
         side,
         amount,
+        isV3,
         executedAt: new Date().toISOString(),
       }
     });

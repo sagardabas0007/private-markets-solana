@@ -14,6 +14,7 @@ import {
   formatTimestamp,
   getMarketTimeRemaining,
   isMarketActive,
+  isDarkMarket,
 } from '@/lib/api';
 
 export default function MarketDetailPage() {
@@ -56,6 +57,8 @@ export default function MarketDetailPage() {
   const timeRemaining = market ? getMarketTimeRemaining(market) : '';
   const endDate = market ? formatTimestamp(market.account.end_time) : new Date();
   const createdDate = market ? formatTimestamp(market.account.creation_time) : new Date();
+  const dark = market ? isDarkMarket(market) : false;
+  const tradingEnabled = market?.tradingEnabled ?? !dark; // V3 markets have tradingEnabled=true
 
   return (
     <div className="min-h-screen bg-off-white">
@@ -250,6 +253,9 @@ export default function MarketDetailPage() {
                       marketAddress={marketId}
                       prices={prices}
                       onTradeComplete={loadMarket}
+                      tradingEnabled={tradingEnabled}
+                      isDarkMarket={dark}
+                      collateralToken={market.account.collateral_token}
                     />
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp, Clock, Users, Zap, Lock, Shield } from 'lucide-react';
+import { TrendingUp, Clock, Users, Zap, Lock, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Market, calculatePriceFromReserves, getMarketTimeRemaining, isMarketActive, isDarkMarket } from '@/lib/api';
 
 interface MarketCardProps {
@@ -17,6 +17,8 @@ export default function MarketCard({ market, isTracked = false }: MarketCardProp
   const timeRemaining = getMarketTimeRemaining(market);
   const active = isMarketActive(market);
   const dark = isDarkMarket(market);
+  const tradingEnabled = market.tradingEnabled ?? false;
+  const isV3 = market.isV3 ?? false;
 
   return (
     <Link href={`/markets/${market.publicKey}`}>
@@ -43,6 +45,25 @@ export default function MarketCard({ market, isTracked = false }: MarketCardProp
               <span className="text-xs font-bold px-2 py-1 rounded-full bg-neon-purple text-white flex items-center gap-1">
                 <Lock className="w-3 h-3" />
                 Private
+              </span>
+            )}
+            {dark && (
+              <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 ${
+                tradingEnabled
+                  ? 'bg-green-500 text-white'
+                  : 'bg-orange-400 text-white'
+              }`}>
+                {tradingEnabled ? (
+                  <>
+                    <CheckCircle className="w-3 h-3" />
+                    Trade
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="w-3 h-3" />
+                    View Only
+                  </>
+                )}
               </span>
             )}
             {isTracked && !dark && (

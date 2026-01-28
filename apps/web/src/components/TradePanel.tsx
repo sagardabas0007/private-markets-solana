@@ -11,13 +11,25 @@ interface TradePanelProps {
   marketAddress: string;
   prices: MarketPrices;
   onTradeComplete?: () => void;
+  tradingEnabled?: boolean;
+  isDarkMarket?: boolean;
+  collateralToken?: string; // Token mint address
 }
+
+// DAC token mint for detecting dark markets
+const DAC_MINT_ADDRESS = 'JBxiN5BBM8ottNaUUpWw6EFtpMRd6iTnmLYrhZB5ArMo';
 
 export default function TradePanel({
   marketAddress,
   prices,
   onTradeComplete,
+  tradingEnabled = true,
+  isDarkMarket = false,
+  collateralToken,
 }: TradePanelProps) {
+  // Determine if this is a DAC market based on collateral token
+  const isUsingDAC = collateralToken === DAC_MINT_ADDRESS || isDarkMarket;
+  const collateralSymbol = isUsingDAC ? 'DAC' : 'USDC';
   const { isConnected } = usePhantom();
   const accounts = useAccounts();
 
@@ -149,6 +161,39 @@ export default function TradePanel({
     );
   }
 
+  // Show warning for V2 markets (trading disabled)
+  if (!tradingEnabled && isDarkMarket) {
+    return (
+      <div className="bg-white border-2 border-orange-400 rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(251,146,60,1)]">
+        <div className="text-center py-8">
+          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-orange-400" />
+          <h3 className="font-bold text-lg mb-2">Trading Disabled</h3>
+          <p className="text-dark/60 text-sm mb-4">
+            This is a V2 Dark Market with uninitialized token mints.
+            Trading is not supported for this market.
+          </p>
+          <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 text-left">
+            <p className="text-xs text-orange-800 mb-2">
+              <strong>Why can&apos;t I trade?</strong>
+            </p>
+            <p className="text-xs text-orange-700">
+              V2 markets were created before the PNP protocol properly initialized
+              YES/NO token mints. Only V3 markets (marked with &quot;Trade&quot; badge)
+              support trading.
+            </p>
+          </div>
+          <div className="mt-4 p-3 bg-neon-purple/10 rounded-xl border border-neon-purple/30">
+            <p className="text-xs text-dark/70">
+              <Shield className="w-3 h-3 inline mr-1" />
+              <strong>Look for V3 markets</strong> with the green &quot;Trade&quot; badge
+              to place encrypted bets.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white border-2 border-dark rounded-2xl p-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
       <div className="flex items-center justify-between mb-6">
@@ -197,19 +242,51 @@ export default function TradePanel({
         </button>
       </div>
 
+      {/* Collateral Type Badge */}
+      {isUsingDAC && (
+        <div className="mb-4 p-3 bg-neon-purple/10 rounded-xl border border-neon-purple/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-neon-purple" />
+              <span className="text-sm font-bold text-neon-purple">DAC Market</span>
+            </div>
+            <Link
+              href="/wrap"
+              className="text-xs text-neon-purple hover:underline flex items-center gap-1"
+            >
+              Get DAC
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          </div>
+          <p className="text-xs text-dark/60 mt-1">
+            This market uses encrypted DAC tokens for privacy
+          </p>
+        </div>
+      )}
+
       {/* Amount Input */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-bold">Amount (USDC)</label>
-          <a
-            href="https://spl-token-faucet.com/?token-name=USDC-Dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-neon-purple hover:underline flex items-center gap-1"
-          >
-            <Coins className="w-3 h-3" />
-            Get USDC
-          </a>
+          <label className="block text-sm font-bold">Amount ({collateralSymbol})</label>
+          {isUsingDAC ? (
+            <Link
+              href="/wrap"
+              className="text-xs text-neon-purple hover:underline flex items-center gap-1"
+            >
+              <Shield className="w-3 h-3" />
+              Wrap USDC to DAC
+            </Link>
+          ) : (
+            <a
+              href="https://spl-token-faucet.com/?token-name=USDC-Dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-neon-purple hover:underline flex items-center gap-1"
+            >
+              <Coins className="w-3 h-3" />
+              Get USDC
+            </a>
+          )}
         </div>
         <div className="relative">
           <input

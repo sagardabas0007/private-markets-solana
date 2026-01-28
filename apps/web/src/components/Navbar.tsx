@@ -34,6 +34,7 @@ const Navbar = () => {
             <NavLink href="/markets">Markets</NavLink>
             <NavLink href="/orderbook">Orderbook</NavLink>
             <NavLink href="/portfolio">Portfolio</NavLink>
+            <NavLink href="/wrap">Wrap</NavLink>
             <NavLink href="/agent">AI Agent</NavLink>
             <NavLink href="/docs">Docs</NavLink>
           </div>
